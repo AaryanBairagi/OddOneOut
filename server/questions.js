@@ -1,159 +1,102 @@
 module.exports = [
 
-{
-topic: "Friends",
-normal: "Who is the funniest friend in the group?",
-impostor: "Who laughs the loudest at jokes?"
-},
+{topic:"Friends",normal:"Who is the funniest friend?",impostor:"Who laughs the loudest?"},
+{topic:"Party",normal:"Who dances the best at parties?",impostor:"Who stays the longest at parties?"},
+{topic:"Dating",normal:"Who would fall in love the fastest?",impostor:"Who flirts the most on dates?"},
+{topic:"Food",normal:"Who eats the most food?",impostor:"Who orders the weirdest food?"},
+{topic:"Travel",normal:"Who plans trips the best?",impostor:"Who gets lost during trips?"},
+{topic:"School",normal:"Who studies the hardest?",impostor:"Who sleeps the most in class?"},
+{topic:"LateNight",normal:"Who stays awake the latest?",impostor:"Who wakes up the earliest?"},
+{topic:"Movies",normal:"Who cries during emotional movies?",impostor:"Who laughs during serious scenes?"},
+{topic:"Gaming",normal:"Who rages the most while gaming?",impostor:"Who celebrates the loudest when winning?"},
+{topic:"Phone",normal:"Who checks their phone the most?",impostor:"Who replies the slowest to messages?"},
 
-{
-topic: "Party",
-normal: "Who would start dancing first at a party?",
-impostor: "Who would stay the latest at a party?"
-},
+{topic:"Gym",normal:"Who goes to the gym most consistently?",impostor:"Who quits the gym first?"},
+{topic:"Music",normal:"Who sings the best?",impostor:"Who sings the loudest?"},
+{topic:"Driving",normal:"Who drives the fastest?",impostor:"Who gets lost while driving?"},
+{topic:"SocialMedia",normal:"Who posts the most selfies?",impostor:"Who scrolls social media the longest?"},
+{topic:"Sleep",normal:"Who sleeps the longest?",impostor:"Who snores the loudest?"},
+{topic:"Cooking",normal:"Who cooks the best meals?",impostor:"Who burns food the most?"},
+{topic:"Drama",normal:"Who starts the most drama?",impostor:"Who enjoys watching drama the most?"},
+{topic:"Confidence",normal:"Who is the most confident?",impostor:"Who pretends to be confident?"},
+{topic:"Fashion",normal:"Who dresses the best?",impostor:"Who takes longest to choose clothes?"},
+{topic:"Secrets",normal:"Who keeps secrets the best?",impostor:"Who accidentally reveals secrets?"},
 
-{
-topic: "Dating",
-normal: "Who would fall in love the fastest?",
-impostor: "Who would flirt the most on a first date?"
-},
+{topic:"Adventure",normal:"Who would try crazy adventures first?",impostor:"Who regrets crazy adventures first?"},
+{topic:"Laughing",normal:"Who laughs at everything?",impostor:"Who laughs at their own jokes?"},
+{topic:"Pets",normal:"Who loves animals the most?",impostor:"Who is scared of animals the most?"},
+{topic:"Sports",normal:"Who is the most athletic?",impostor:"Who pretends to like sports?"},
+{topic:"Books",normal:"Who reads the most books?",impostor:"Who buys books but never reads them?"},
+{topic:"Rain",normal:"Who enjoys rain the most?",impostor:"Who complains about rain the most?"},
+{topic:"Coffee",normal:"Who drinks the most coffee?",impostor:"Who stays awake without coffee?"},
+{topic:"RoadTrip",normal:"Who controls the music on road trips?",impostor:"Who falls asleep first on road trips?"},
+{topic:"Work",normal:"Who works the hardest?",impostor:"Who procrastinates the most?"},
+{topic:"Shopping",normal:"Who buys the most clothes?",impostor:"Who spends the longest shopping?"},
 
-{
-topic: "Embarrassing",
-normal: "Who would trip in public the most?",
-impostor: "Who would laugh after falling in public?"
-},
+{topic:"FriendGroup",normal:"Who organizes group plans?",impostor:"Who cancels plans the most?"},
+{topic:"Memes",normal:"Who sends the best memes?",impostor:"Who sends the most memes?"},
+{topic:"Jokes",normal:"Who tells the funniest jokes?",impostor:"Who laughs before finishing a joke?"},
+{topic:"Chill",normal:"Who is the most relaxed person?",impostor:"Who pretends to be relaxed?"},
+{topic:"Advice",normal:"Who gives the best advice?",impostor:"Who ignores their own advice?"},
+{topic:"Planning",normal:"Who plans everything?",impostor:"Who goes with the flow always?"},
+{topic:"MusicTaste",normal:"Who has the best music taste?",impostor:"Who listens to music the loudest?"},
+{topic:"Weather",normal:"Who complains about heat the most?",impostor:"Who complains about cold the most?"},
+{topic:"Laugh",normal:"Who has the most contagious laugh?",impostor:"Who laughs the weirdest?"},
+{topic:"Energy",normal:"Who has the most energy in the group?",impostor:"Who gets tired the fastest?"},
 
-{
-topic: "Food",
-normal: "Who eats the most food at dinner?",
-impostor: "Who orders the weirdest food combinations?"
-},
+{topic:"Dating",normal:"Who would text their crush first?",impostor:"Who waits longest to reply to a crush?"},
+{topic:"Romance",normal:"Who plans the best romantic date?",impostor:"Who forgets anniversaries?"},
+{topic:"FirstDate",normal:"Who gets nervous on first dates?",impostor:"Who talks nonstop on first dates?"},
+{topic:"Flirting",normal:"Who is the best at flirting?",impostor:"Who flirts without realizing it?"},
+{topic:"Love",normal:"Who falls in love quickly?",impostor:"Who pretends not to care about love?"},
+{topic:"Compliments",normal:"Who gives the best compliments?",impostor:"Who receives the most compliments?"},
+{topic:"DatingApps",normal:"Who would use dating apps the most?",impostor:"Who deletes dating apps the fastest?"},
+{topic:"RomanticMovies",normal:"Who enjoys romantic movies?",impostor:"Who makes fun of romantic movies?"},
+{topic:"Jealousy",normal:"Who gets jealous the fastest?",impostor:"Who pretends not to be jealous?"},
+{topic:"Crush",normal:"Who has the most secret crushes?",impostor:"Who denies having crushes?"},
 
-{
-topic: "Travel",
-normal: "Who would plan the entire trip?",
-impostor: "Who would get lost during the trip?"
-},
+{topic:"Awkward",normal:"Who gets awkward in silence?",impostor:"Who talks to break awkward silence?"},
+{topic:"Texting",normal:"Who texts the most?",impostor:"Who leaves messages on read?"},
+{topic:"NightOut",normal:"Who suggests going out?",impostor:"Who cancels last minute?"},
+{topic:"LaughingFit",normal:"Who laughs during serious moments?",impostor:"Who stays serious during jokes?"},
+{topic:"Pranks",normal:"Who pulls the best pranks?",impostor:"Who falls for pranks the most?"},
+{topic:"Dance",normal:"Who dances confidently?",impostor:"Who dances awkwardly?"},
+{topic:"FoodShare",normal:"Who shares food the most?",impostor:"Who steals food from others?"},
+{topic:"CookingSkill",normal:"Who experiments in cooking?",impostor:"Who orders takeout instead?"},
+{topic:"TravelPhotos",normal:"Who takes the best travel photos?",impostor:"Who takes the most selfies?"},
+{topic:"Beach",normal:"Who loves the beach the most?",impostor:"Who hates sand the most?"},
 
-{
-topic: "School",
-normal: "Who studies the most before exams?",
-impostor: "Who sleeps during lectures?"
-},
+{topic:"Cold",normal:"Who always feels cold?",impostor:"Who always feels hot?"},
+{topic:"EarlyBird",normal:"Who wakes up early easily?",impostor:"Who stays awake till morning?"},
+{topic:"FoodChoice",normal:"Who tries new food?",impostor:"Who sticks to the same food?"},
+{topic:"AdventureTrip",normal:"Who suggests crazy trips?",impostor:"Who backs out of trips?"},
+{topic:"WorkStress",normal:"Who stresses about work the most?",impostor:"Who ignores work stress the most?"},
+{topic:"Laughing",normal:"Who laughs the loudest?",impostor:"Who laughs silently?"},
+{topic:"FashionRisk",normal:"Who experiments with fashion?",impostor:"Who plays safe with fashion?"},
+{topic:"Music",normal:"Who listens to music all day?",impostor:"Who sings randomly?"},
+{topic:"TravelDream",normal:"Who dreams of traveling the world?",impostor:"Who prefers staying home?"},
+{topic:"GameNight",normal:"Who is most competitive in games?",impostor:"Who jokes around in games?"},
 
-{
-topic: "Late Night",
-normal: "Who stays up the latest at night?",
-impostor: "Who wakes up the earliest?"
-},
+{topic:"Friends",normal:"Who gives the best hugs?",impostor:"Who avoids hugs?"},
+{topic:"Energy",normal:"Who brings the most energy to the group?",impostor:"Who calms everyone down?"},
+{topic:"Storytelling",normal:"Who tells the best stories?",impostor:"Who exaggerates stories?"},
+{topic:"Sarcasm",normal:"Who is the most sarcastic?",impostor:"Who doesn't understand sarcasm?"},
+{topic:"LaughTrack",normal:"Who laughs at bad jokes?",impostor:"Who criticizes bad jokes?"},
+{topic:"Sleepovers",normal:"Who talks the most during sleepovers?",impostor:"Who sleeps first?"},
+{topic:"Photos",normal:"Who takes group photos?",impostor:"Who avoids photos?"},
+{topic:"PlanningTrips",normal:"Who plans trips carefully?",impostor:"Who improvises trips?"},
+{topic:"Confidence",normal:"Who walks into rooms confidently?",impostor:"Who observes quietly?"},
+{topic:"FunnyMoments",normal:"Who causes the funniest moments?",impostor:"Who laughs at funny moments?"},
 
-{
-topic: "Money",
-normal: "Who spends the most money on shopping?",
-impostor: "Who saves money the most?"
-},
-
-{
-topic: "Movies",
-normal: "Who cries during emotional movies?",
-impostor: "Who laughs during serious scenes?"
-},
-
-{
-topic: "Gaming",
-normal: "Who rages the most while gaming?",
-impostor: "Who celebrates the loudest after winning?"
-},
-
-{
-topic: "Phones",
-normal: "Who checks their phone the most?",
-impostor: "Who replies to messages the slowest?"
-},
-
-{
-topic: "Gym",
-normal: "Who would go to the gym the most?",
-impostor: "Who would quit the gym first?"
-},
-
-{
-topic: "Music",
-normal: "Who sings the best in the group?",
-impostor: "Who sings the loudest?"
-},
-
-{
-topic: "Driving",
-normal: "Who would drive the fastest?",
-impostor: "Who would get lost while driving?"
-},
-
-{
-topic: "Social Media",
-normal: "Who posts the most selfies?",
-impostor: "Who spends the most time scrolling?"
-},
-
-{
-topic: "Sleep",
-normal: "Who sleeps the longest?",
-impostor: "Who snores the loudest?"
-},
-
-{
-topic: "Cooking",
-normal: "Who cooks the best meals?",
-impostor: "Who burns food the most?"
-},
-
-{
-topic: "Drama",
-normal: "Who starts the most drama?",
-impostor: "Who enjoys watching drama the most?"
-},
-
-{
-topic: "Laughing",
-normal: "Who laughs at everything?",
-impostor: "Who laughs at their own jokes?"
-},
-
-{
-topic: "Relationships",
-normal: "Who would give the best relationship advice?",
-impostor: "Who would ignore their own advice?"
-},
-
-{
-topic: "Awkward",
-normal: "Who gets awkward in silence?",
-impostor: "Who talks the most to break silence?"
-},
-
-{
-topic: "Fashion",
-normal: "Who dresses the best?",
-impostor: "Who spends the longest choosing clothes?"
-},
-
-{
-topic: "Confidence",
-normal: "Who is the most confident person here?",
-impostor: "Who acts confident but isn't?"
-},
-
-{
-topic: "Secrets",
-normal: "Who keeps secrets the best?",
-impostor: "Who accidentally reveals secrets?"
-},
-
-{
-topic: "Adventures",
-normal: "Who would try something crazy first?",
-impostor: "Who would regret it immediately?"
-}
+{topic:"Dates",normal:"Who would plan a fancy date?",impostor:"Who would plan a chill casual date?"},
+{topic:"Charm",normal:"Who charms strangers easily?",impostor:"Who avoids talking to strangers?"},
+{topic:"Romantic",normal:"Who believes in romantic gestures?",impostor:"Who thinks romance is overrated?"},
+{topic:"Blushing",normal:"Who blushes the fastest?",impostor:"Who hides embarrassment the best?"},
+{topic:"Compliments",normal:"Who gives sweet compliments?",impostor:"Who jokes while complimenting?"},
+{topic:"Couples",normal:"Who gives the best couple advice?",impostor:"Who teases couples the most?"},
+{topic:"FriendSupport",normal:"Who supports friends the most?",impostor:"Who roasts friends the most?"},
+{topic:"LaughAttack",normal:"Who starts laughing first?",impostor:"Who can't stop laughing once started?"},
+{topic:"Food",normal:"Who finishes their food fastest?",impostor:"Who shares their food most?"},
+{topic:"Plans",normal:"Who makes the most spontaneous plans?",impostor:"Who prefers planning ahead?"}
 
 ];
