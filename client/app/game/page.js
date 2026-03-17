@@ -9,7 +9,7 @@ import PlayerCard from "../../components/PlayerCard"
 import AnswerCard from "../../components/AnswerCard"
 import ScoreBoard from "../../components/ScoreBoard"
 import ChatBox from "../../components/ChatBox"
-import { getSocket } from "../lib/socket"
+import { getSocket } from "../../lib/socket"
 
 export default function Game(){
 const socket = getSocket()
