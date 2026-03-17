@@ -3,22 +3,27 @@
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 
-export default function Timer({ seconds, endTime }) {
+export default function Timer({ seconds, trigger }) {
 
   const [time, setTime] = useState(seconds)
 
   useEffect(() => {
 
-    if (!endTime) return
+    setTime(seconds) // 🔥 reset when trigger changes
 
     const interval = setInterval(() => {
-      const remaining = Math.max(0, Math.floor((endTime - Date.now()) / 1000))
-      setTime(remaining)
+      setTime(prev => {
+        if (prev <= 1) {
+          clearInterval(interval)
+          return 0
+        }
+        return prev - 1
+      })
     }, 1000)
 
     return () => clearInterval(interval)
 
-  }, [endTime])
+  }, [trigger]) // 🔥 important
 
   const progress = (time / seconds) * 283
 
@@ -28,17 +33,9 @@ export default function Timer({ seconds, endTime }) {
       <div className="relative w-24 h-24">
 
         <svg className="rotate-[-90deg]">
+          <circle cx="50" cy="50" r="45" stroke="#ffffff22" strokeWidth="8" fill="transparent" />
 
-          <circle
-            cx="50"
-            cy="50"
-            r="45"
-            stroke="#ffffff22"
-            strokeWidth="8"
-            fill="transparent"
-          />
-
-          <motion.circle
+          {/* <motion.circle
             cx="50"
             cy="50"
             r="45"
@@ -47,8 +44,20 @@ export default function Timer({ seconds, endTime }) {
             fill="transparent"
             strokeDasharray="283"
             strokeDashoffset={283 - progress}
-          />
+          /> */}
 
+        <motion.circle
+          cx="50"
+          cy="50"
+          r="45"
+          stroke="#a855f7"
+          strokeWidth="8"
+          fill="transparent"
+          strokeDasharray="283"
+          animate={{ strokeDashoffset: 283 - progress }}
+          transition={{ duration: 0.5 }}
+        />
+        
         </svg>
 
         <div className="absolute inset-0 flex items-center justify-center text-xl font-bold">

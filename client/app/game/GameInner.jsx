@@ -189,7 +189,7 @@ OddOneOut
 
 <div className="flex flex-col gap-4">
 
-<Timer seconds={45}/>
+<Timer seconds={45} trigger={phase} />
 
 <textarea
 className="bg-black/40 border border-white/20 p-3 rounded-lg"
