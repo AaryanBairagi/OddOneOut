@@ -138,8 +138,20 @@ return () => {
 },[room])
 
 
+// function submitAnswer(){
+// socket.emit("answer",{roomId:room,answer})
+// }
 function submitAnswer(){
-socket.emit("answer",{roomId:room,answer})
+
+  console.log("SUBMIT CLICKED", answer, room)
+
+  if(!answer){
+    alert("Write something first")
+    return
+  }
+
+  socket.emit("answer",{roomId:room,answer})
+
 }
 
 function vote(id){
