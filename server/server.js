@@ -266,7 +266,7 @@ const room = rooms[roomId]
 
 room.answers[socket.id] = answer
 
-if(Object.keys(room.answers).length === room.players.length){
+if(Object.keys(room.answers).length === room.players.length || Object.keys(room.answers).length >=1 ){
 showAnswers(roomId)
 }
 
