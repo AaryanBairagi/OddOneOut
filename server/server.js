@@ -85,8 +85,50 @@ function showAnswers(roomId) {
 
   setTimeout(() => {
     io.to(roomId).emit("start-voting", room.players)
-  }, 5000)
+  }, 240000)
 }
+
+// function calculateVotes(roomId) {
+//   const room = rooms[roomId]
+//   if (!room) return
+
+//   let count = {}
+
+//   Object.values(room.votes).forEach(v => {
+//     count[v] = (count[v] || 0) + 1
+//   })
+
+//   let max = 0
+//   let suspect = null
+
+//   for (let p in count) {
+//     if (count[p] > max) {
+//       max = count[p]
+//       suspect = p
+//     }
+//   }
+
+//   room.players.forEach(p => {
+//     if (p.id === suspect && suspect === room.impostor) {
+//       p.score += 20
+//     }
+
+//     if (p.id !== suspect && p.id !== room.impostor) {
+//       p.score += 10
+//     }
+//   })
+
+//   io.to(roomId).emit("result", {
+//     suspect,
+//     impostor: room.impostor,
+//     players: room.players
+//   })
+
+//   setTimeout(() => {
+//     nextRound(roomId)
+//   }, 5000)
+// }
+
 
 function calculateVotes(roomId) {
   const room = rooms[roomId]
@@ -108,6 +150,11 @@ function calculateVotes(roomId) {
     }
   }
 
+  // 🧠 CONVERT IDs → NAMES
+  const suspectPlayer = room.players.find(p => p.id === suspect)
+  const impostorPlayer = room.players.find(p => p.id === room.impostor)
+
+  // 🎯 SCORING (unchanged logic)
   room.players.forEach(p => {
     if (p.id === suspect && suspect === room.impostor) {
       p.score += 20
@@ -118,16 +165,19 @@ function calculateVotes(roomId) {
     }
   })
 
+  // ✅ SEND NAMES INSTEAD OF IDs
   io.to(roomId).emit("result", {
-    suspect,
-    impostor: room.impostor,
+    suspect: suspectPlayer ? suspectPlayer.name : "No one",
+    impostor: impostorPlayer ? impostorPlayer.name : "Unknown",
     players: room.players
   })
 
+  // ⏳ MORE TIME TO SEE RESULT
   setTimeout(() => {
     nextRound(roomId)
-  }, 5000)
+  }, 8000) // increased from 5s → 8s
 }
+
 
 function nextRound(roomId) {
   const room = rooms[roomId]
