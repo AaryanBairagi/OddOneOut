@@ -1,3 +1,18 @@
+"use client"
+
 import { io } from "socket.io-client"
 
-export const socket = io("http://localhost:5000")
+let socket
+
+export function getSocket() {
+  if (!socket) {
+    socket = io(process.env.NEXT_PUBLIC_SOCKET_URL, {
+      transports: ["websocket"],
+    })
+  }
+  return socket
+}
+
+// import { io } from "socket.io-client"
+
+// export const socket = io("http://localhost:5000")
