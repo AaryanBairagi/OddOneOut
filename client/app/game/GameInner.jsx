@@ -23,42 +23,101 @@ const [players,setPlayers] = useState([])
 const [phase,setPhase] = useState("answer")
 const [result,setResult] = useState(null)
 
+// useEffect(()=>{
+
+// function handleQuestion(q){
+// setQuestion(q.text)
+// setPhase("answer")
+// }
+
+// function handleAnswers(a){
+// setAnswers(a)
+// setPhase("discussion")
+// }
+
+// function handleVoting(p){
+// setPlayers(p)
+// setPhase("vote")
+// }
+
+// function handleResult(r){
+
+// setResult(r)
+// setPlayers(r.players)
+// setPhase("result")
+
+// playSound(sounds.reveal)
+
+// if(r.suspect === r.impostor){
+
+// confetti({
+// particleCount:150,
+// spread:70,
+// origin:{y:0.6}
+// })
+
+// playSound(sounds.win)
+
+// }
+
+// }
+
+// socket.on("question",handleQuestion)
+// socket.on("answers",handleAnswers)
+// socket.on("start-voting",handleVoting)
+// socket.on("result",handleResult)
+
+// return () => {
+
+// socket.off("question",handleQuestion)
+// socket.off("answers",handleAnswers)
+// socket.off("start-voting",handleVoting)
+// socket.off("result",handleResult)
+
+// }
+
+// },[])
+
+
 useEffect(()=>{
 
+if(!room) return
+
+// 🔥 IMPORTANT → ask backend for question
+socket.emit("get-question", { roomId: room })
+
 function handleQuestion(q){
-setQuestion(q.text)
-setPhase("answer")
+  console.log("QUESTION RECEIVED:", q)
+  setQuestion(q.text)
+  setPhase("answer")
 }
 
 function handleAnswers(a){
-setAnswers(a)
-setPhase("discussion")
+  setAnswers(a)
+  setPhase("discussion")
 }
 
 function handleVoting(p){
-setPlayers(p)
-setPhase("vote")
+  setPlayers(p)
+  setPhase("vote")
 }
 
 function handleResult(r){
 
-setResult(r)
-setPlayers(r.players)
-setPhase("result")
+  setResult(r)
+  setPlayers(r.players)
+  setPhase("result")
 
-playSound(sounds.reveal)
+  playSound(sounds.reveal)
 
-if(r.suspect === r.impostor){
-
-confetti({
-particleCount:150,
-spread:70,
-origin:{y:0.6}
-})
-
-playSound(sounds.win)
-
-}
+  if(r.suspect === r.impostor){
+    confetti({
+      particleCount:150,
+      spread:70,
+      origin:{y:0.6}
+    })
+    playSound(sounds.win)
+  }
 
 }
 
@@ -69,14 +128,15 @@ socket.on("result",handleResult)
 
 return () => {
 
-socket.off("question",handleQuestion)
-socket.off("answers",handleAnswers)
-socket.off("start-voting",handleVoting)
-socket.off("result",handleResult)
+  socket.off("question",handleQuestion)
+  socket.off("answers",handleAnswers)
+  socket.off("start-voting",handleVoting)
+  socket.off("result",handleResult)
 
 }
 
-},[])
+},[room])
+
 
 function submitAnswer(){
 socket.emit("answer",{roomId:room,answer})
@@ -122,7 +182,7 @@ OddOneOut
 </h1>
 
 <div className="bg-white/10 backdrop-blur-lg p-4 rounded-xl text-center">
-{question}
+{question || "Waiting for Question..."}
 </div>
 
 {phase === "answer" && (

@@ -24,16 +24,16 @@ export default function LobbyInner() {
       setPlayers(p)
     }
 
-    function handleQuestion() {
+    function handleStartGame() {
       router.push(`/game?room=${room}`)
     }
 
     socket.on("players", handlePlayers)
-    socket.on("question", handleQuestion)
+    socket.on("start-game", handleStartGame)
 
     return () => {
       socket.off("players", handlePlayers)
-      socket.off("question", handleQuestion)
+      socket.off("start-game", handleStartGame)
     }
 
   }, [room, name])
@@ -60,22 +60,17 @@ export default function LobbyInner() {
           <div className="flex flex-col gap-3">
 
             {players.map((p, i) => (
-
-              <div
-                key={i}
-                className="bg-black/40 border border-white/10 p-3 rounded-lg flex justify-between"
-              >
+              <div key={i} className="bg-black/40 border border-white/10 p-3 rounded-lg flex justify-between">
                 <span>{p.name}</span>
                 <span className="text-white/40">ready</span>
               </div>
-
             ))}
 
           </div>
 
           <button
             onClick={start}
-            className="w-full py-3 rounded-lg font-semibold text-lg bg-gradient-to-r from-purple-500 to-blue-500 hover:scale-[1.02] active:scale-95 transition"
+            className="w-full py-3 rounded-lg font-semibold text-lg bg-gradient-to-r from-purple-500 to-blue-500"
           >
             Start Game
           </button>
