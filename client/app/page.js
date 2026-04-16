@@ -1,29 +1,35 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { getSocket } from "../lib/socket"
+import { connectSocket, subscribeRoom, sendMessage } from "../lib/socket"
 
 export default function Home(){
 
 const [name,setName] = useState("")
 const [room,setRoom] = useState("")
-
 const router = useRouter()
-const socket = getSocket()
+
+useEffect(()=>{
+  connectSocket()
+},[])
 
 function create(){
 
-socket.emit("create-room",{username:name})
+  if(!name) return
 
-socket.on("room-created",(roomId)=>{
-router.push(`/lobby?room=${roomId}&name=${name}`)
-})
+  sendMessage("create-room",{username:name})
 
+  // TEMP: listen for room creation
+  subscribeRoom("global",(data)=>{
+    if(typeof data === "string"){
+      router.push(`/lobby?room=${data}&name=${name}`)
+    }
+  })
 }
 
 function join(){
-router.push(`/lobby?room=${room}&name=${name}`)
+  router.push(`/lobby?room=${room}&name=${name}`)
 }
 
 return(
@@ -39,39 +45,33 @@ OddOneOut
 </h1>
 
 <p className="text-center text-white/60 text-sm">
-
 Find the impostor before they fool everyone.
-
 </p>
 
 <input
 placeholder="Your Name"
-className="w-full p-3 rounded-lg bg-black/40 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+className="w-full p-3 rounded-lg bg-black/40 border border-white/20 text-white"
 onChange={(e)=>setName(e.target.value)}
 />
 
 <button
 onClick={create}
-className="w-full py-3 rounded-lg text-lg font-semibold bg-gradient-to-r from-purple-500 to-blue-500 hover:scale-[1.02] active:scale-95 transition"
+className="w-full py-3 rounded-lg text-lg font-semibold bg-gradient-to-r from-purple-500 to-blue-500"
 >
-
 Create Room
-
 </button>
 
 <input
 placeholder="Room Code"
-className="w-full p-3 rounded-lg bg-black/40 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-green-400"
+className="w-full p-3 rounded-lg bg-black/40 border border-white/20 text-white"
 onChange={(e)=>setRoom(e.target.value)}
 />
 
 <button
 onClick={join}
-className="w-full py-3 rounded-lg text-lg font-semibold bg-gradient-to-r from-green-400 to-emerald-500 hover:scale-[1.02] active:scale-95 transition"
+className="w-full py-3 rounded-lg text-lg font-semibold bg-gradient-to-r from-green-400 to-emerald-500"
 >
-
 Join Room
-
 </button>
 
 </div>
@@ -81,5 +81,4 @@ Join Room
 </div>
 
 )
-
 }

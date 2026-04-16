@@ -1,27 +1,34 @@
 "use client"
 
-import { getSocket } from "@/lib/socket"
 import { useState, useEffect, useRef } from "react"
+import { connectSocket, subscribeRoom, sendMessage } from "@/lib/socket"
 
 export default function ChatBox({ room }) {
-  const socket = getSocket()
+
   const [msg, setMsg] = useState("")
   const [messages, setMessages] = useState([])
   const bottomRef = useRef()
 
   useEffect(() => {
 
-    function handleChat(m) {
-      setMessages(prev => [...prev, m])
-    }
+    if (!room) return
 
-    socket.on("chat", handleChat)
+    connectSocket()
 
-    return () => {
-      socket.off("chat", handleChat)
-    }
+    subscribeRoom(room, (data) => {
+      console.log("Chat data:", data)
 
-  }, [])
+      // chat messages come as string or object
+      if (typeof data === "string") {
+        setMessages(prev => [...prev, data])
+      }
+
+      if (data.msg) {
+        setMessages(prev => [...prev, data])
+      }
+    })
+
+  }, [room])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -31,7 +38,7 @@ export default function ChatBox({ room }) {
 
     if (!msg.trim()) return
 
-    socket.emit("chat", {
+    sendMessage("chat", {
       room,
       msg,
     })

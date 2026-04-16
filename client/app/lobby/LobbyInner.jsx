@@ -2,14 +2,13 @@
 
 import { useEffect, useState } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { getSocket } from "@/lib/socket"
+import { connectSocket, subscribeRoom, sendMessage } from "@/lib/socket"
 
 export default function LobbyInner() {
 
   const params = useSearchParams()
   const room = params.get("room")
   const name = params.get("name")
-  const socket = getSocket()
 
   const [players, setPlayers] = useState([])
   const router = useRouter()
@@ -18,28 +17,30 @@ export default function LobbyInner() {
 
     if (!room || !name) return
 
-    socket.emit("join-room", { roomId: room, username: name })
+    connectSocket()
 
-    function handlePlayers(p) {
-      setPlayers(p)
-    }
+    // join room
+    sendMessage("join-room", { roomId: room, username: name })
 
-    function handleStartGame() {
-      router.push(`/game?room=${room}`)
-    }
+    // subscribe to room
+    subscribeRoom(room, (data) => {
+      console.log("Lobby data:", data)
 
-    socket.on("players", handlePlayers)
-    socket.on("start-game", handleStartGame)
+      // players list
+      if (Array.isArray(data)) {
+        setPlayers(data)
+      }
 
-    return () => {
-      socket.off("players", handlePlayers)
-      socket.off("start-game", handleStartGame)
-    }
+      // start game event
+      if (data === "start-game") {
+        router.push(`/game?room=${room}`)
+      }
+    })
 
   }, [room, name])
 
   function start() {
-    socket.emit("start-game", room)
+    sendMessage("start-game", room)
   }
 
   return (

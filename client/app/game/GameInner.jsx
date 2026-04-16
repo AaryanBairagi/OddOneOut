@@ -9,10 +9,10 @@ import PlayerCard from "../../components/PlayerCard"
 import AnswerCard from "../../components/AnswerCard"
 import ScoreBoard from "../../components/ScoreBoard"
 import ChatBox from "../../components/ChatBox"
-import { getSocket } from "../../lib/socket"
+import { connectSocket, subscribeRoom, sendMessage } from "../../lib/socket"
 
 export default function Game(){
-const socket = getSocket()
+
 const params = useSearchParams()
 const room = params.get("room")
 
@@ -23,139 +23,71 @@ const [players,setPlayers] = useState([])
 const [phase,setPhase] = useState("answer")
 const [result,setResult] = useState(null)
 
-// useEffect(()=>{
-
-// function handleQuestion(q){
-// setQuestion(q.text)
-// setPhase("answer")
-// }
-
-// function handleAnswers(a){
-// setAnswers(a)
-// setPhase("discussion")
-// }
-
-// function handleVoting(p){
-// setPlayers(p)
-// setPhase("vote")
-// }
-
-// function handleResult(r){
-
-// setResult(r)
-// setPlayers(r.players)
-// setPhase("result")
-
-// playSound(sounds.reveal)
-
-// if(r.suspect === r.impostor){
-
-// confetti({
-// particleCount:150,
-// spread:70,
-// origin:{y:0.6}
-// })
-
-// playSound(sounds.win)
-
-// }
-
-// }
-
-// socket.on("question",handleQuestion)
-// socket.on("answers",handleAnswers)
-// socket.on("start-voting",handleVoting)
-// socket.on("result",handleResult)
-
-// return () => {
-
-// socket.off("question",handleQuestion)
-// socket.off("answers",handleAnswers)
-// socket.off("start-voting",handleVoting)
-// socket.off("result",handleResult)
-
-// }
-
-// },[])
-
-
 useEffect(()=>{
 
 if(!room) return
 
-// 🔥 IMPORTANT → ask backend for question
-socket.emit("get-question", { roomId: room })
+connectSocket()
 
-function handleQuestion(q){
-  console.log("QUESTION RECEIVED:", q)
-  setQuestion(q.text)
-  setPhase("answer")
-}
+// ask backend for question
+sendMessage("get-question", { roomId: room })
 
-function handleAnswers(a){
-  setAnswers(a)
-  setPhase("discussion")
-}
+subscribeRoom(room,(data)=>{
 
-function handleVoting(p){
-  setPlayers(p)
-  setPhase("vote")
-}
+  console.log("GAME DATA:",data)
 
-function handleResult(r){
-
-  setResult(r)
-  setPlayers(r.players)
-  setPhase("result")
-
-  playSound(sounds.reveal)
-
-  if(r.suspect === r.impostor){
-    confetti({
-      particleCount:150,
-      spread:70,
-      origin:{y:0.6}
-    })
-    playSound(sounds.win)
+  // 🟣 QUESTION
+  if(data.text){
+    setQuestion(data.text)
+    setPhase("answer")
   }
 
-}
+  // 🟣 ANSWERS
+  if(data.type === "answers"){
+    setAnswers(data.answers)
+    setPhase("discussion")
+  }
 
-socket.on("question",handleQuestion)
-socket.on("answers",handleAnswers)
-socket.on("start-voting",handleVoting)
-socket.on("result",handleResult)
+  // 🟣 START VOTING
+  if(data === "start-voting"){
+    setPhase("vote")
+  }
 
-return () => {
+  // 🟣 RESULT
+  if(data.type === "result"){
 
-  socket.off("question",handleQuestion)
-  socket.off("answers",handleAnswers)
-  socket.off("start-voting",handleVoting)
-  socket.off("result",handleResult)
+    setResult(data)
+    setPlayers(data.players)
+    setPhase("result")
 
-}
+    playSound(sounds.reveal)
+
+    if(data.suspect === data.impostor){
+      confetti({
+        particleCount:150,
+        spread:70,
+        origin:{y:0.6}
+      })
+      playSound(sounds.win)
+    }
+  }
+
+})
 
 },[room])
 
-
-// function submitAnswer(){
-// socket.emit("answer",{roomId:room,answer})
-// }
 function submitAnswer(){
-
-  console.log("SUBMIT CLICKED", answer, room)
 
   if(!answer){
     alert("Write something first")
     return
   }
 
-  socket.emit("answer",{roomId:room,answer})
-
+  sendMessage("answer",{roomId:room,answer})
 }
 
 function vote(id){
-socket.emit("vote",{roomId:room,vote:id})
+  sendMessage("vote",{roomId:room,vote:id})
 }
 
 if(phase === "result"){
@@ -169,10 +101,8 @@ Round Result
 </h2>
 
 <div className="bg-white/10 backdrop-blur-lg p-6 rounded-xl text-center">
-
 <p>Suspect: {result?.suspect}</p>
 <p>Impostor: {result?.impostor}</p>
-
 </div>
 
 <ScoreBoard players={players}/>
