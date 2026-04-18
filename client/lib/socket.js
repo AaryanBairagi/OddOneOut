@@ -2,8 +2,14 @@ import SockJS from "sockjs-client";
 import { Client } from "@stomp/stompjs";
 
 let stompClient = null;
+let isConnected = false;
 
-export function connectSocket(onMessage) {
+export function connectSocket(onConnectCallback) {
+  if (stompClient && isConnected) {
+    if (onConnectCallback) onConnectCallback();
+    return;
+  }
+
   const socket = new SockJS("http://localhost:8080/ws");
 
   stompClient = new Client({
@@ -12,8 +18,15 @@ export function connectSocket(onMessage) {
 
     onConnect: () => {
       console.log("Connected to Java WebSocket");
+      isConnected = true;
 
-      // subscribe to room messages (we'll set room dynamically later)
+      if (onConnectCallback) {
+        onConnectCallback();
+      }
+    },
+
+    onDisconnect: () => {
+      isConnected = false;
     },
 
     onStompError: (frame) => {
@@ -28,43 +41,36 @@ export function subscribeRoom(roomId, callback) {
   if (!stompClient) return;
 
   stompClient.subscribe(`/topic/${roomId}`, (msg) => {
-    const data = JSON.parse(msg.body);
+    const data = msg.body;
     callback(data);
   });
 }
 
-export function sendMessage(destination, payload) {
+// 🔥 THIS IS NEW (IMPORTANT)
+export function subscribePrivate(destination, callback) {
   if (!stompClient) return;
+
+  console.log("SUBSCRIBING TO:", `/user${destination}`)
+
+  stompClient.subscribe(`/user${destination}`, (msg) => {
+    console.log("PRIVATE MSG RECEIVED:", msg.body)
+    const data = JSON.parse(msg.body)
+    callback(data)
+  });
+}
+
+export function sendMessage(destination, payload) {
+  console.log("📤 Attempt:", destination, payload);
+
+  if (!stompClient || !isConnected) {
+    console.error("❌ STOMP not connected yet");
+    return;
+  }
+
+  console.log("✅ Sending now");
 
   stompClient.publish({
     destination: `/app/${destination}`,
     body: JSON.stringify(payload),
   });
 }
-
-
-
-
-
-
-
-
-// "use client"
-
-// import { io } from "socket.io-client"
-
-// let socket
-
-// export function getSocket() {
-//   if (!socket) {
-//     socket = io(process.env.NEXT_PUBLIC_SOCKET_URL, {
-//       transports : ["websocket"],
-//       secure : true
-//     })
-//   }
-//   return socket
-// }
-
-// // import { io } from "socket.io-client"
-
-// // export const socket = io("http://localhost:5000")

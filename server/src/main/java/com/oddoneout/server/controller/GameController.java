@@ -26,20 +26,21 @@ public class GameController {
     // CREATE ROOM
     @MessageMapping("/create-room")
     public void createRoom(Map<String, String> payload) {
-        String username = payload.get("username");
+    String username = payload.get("username");
 
-        String roomId = GameService.randomRoom();
+    String roomId = GameService.randomRoom();
 
-        Room room = new Room();
-        Player player = new Player(UUID.randomUUID().toString(), username);
+    Room room = new Room();
+    Player player = new Player(UUID.randomUUID().toString(), username);
 
-        room.players.add(player);
-        room.host = player.id;
+    room.players.add(player);
+    room.host = player.id;
 
-        GameService.rooms.put(roomId, room);
+    GameService.rooms.put(roomId, room);
 
-        messagingTemplate.convertAndSend("/topic/" + roomId, room);
-    }
+    // 🔥 SEND TO GLOBAL TOPIC
+    messagingTemplate.convertAndSend("/topic/global", roomId);
+}
 
     // JOIN ROOM
     @MessageMapping("/join-room")
@@ -50,14 +51,32 @@ public class GameController {
         Room room = GameService.rooms.get(roomId);
         if (room == null) return;
 
-        room.players.add(new Player(UUID.randomUUID().toString(), username));
+        Player newPlayer = new Player(UUID.randomUUID().toString(), username);
+        room.players.add(newPlayer);
 
-        messagingTemplate.convertAndSend("/topic/" + roomId, room.players);
+        // ✅ send players to everyone (NO yourId here)
+        messagingTemplate.convertAndSend("/topic/" + roomId,
+            Map.of(
+                "type", "players",
+                "players", room.players
+            )
+        );
+
+        // ✅ send personal ID ONLY to that user
+        messagingTemplate.convertAndSendToUser(
+            newPlayer.id,
+            "/queue/me",
+            Map.of("yourId", newPlayer.id)
+        );
     }
 
     // START GAME
     @MessageMapping("/start-game")
-    public void startGame(String roomId) {
+    public void startGame(Map<String, String> payload) {
+        String roomId = payload.get("roomId");
+
+        System.out.println("START GAME TRIGGERED for room: " + roomId);
+
         Room room = GameService.rooms.get(roomId);
         if (room == null) return;
 
@@ -79,6 +98,8 @@ public class GameController {
         room.impostor = room.players.get(impostorIndex).id;
 
         room.question = QuestionsData.randomQuestion();
+        
+        System.out.println("START GAME TRIGGERED for room: " + roomId);
 
         messagingTemplate.convertAndSend("/topic/" + roomId, "start-game");
 
@@ -103,8 +124,13 @@ public class GameController {
                     ? room.question.getImpostor()
                     : room.question.getNormal();
 
-            messagingTemplate.convertAndSend("/topic/" + roomId,
-                    Map.of("playerId", p.id, "text", text, "round", room.round));
+            System.out.println("SENDING TO USER: " + p.id + " TEXT: " + text);
+
+            messagingTemplate.convertAndSendToUser(
+                p.id,
+                "/queue/question",
+                Map.of("text", text, "round", room.round)
+            );
         }
     }
 

@@ -9,180 +9,203 @@ import PlayerCard from "../../components/PlayerCard"
 import AnswerCard from "../../components/AnswerCard"
 import ScoreBoard from "../../components/ScoreBoard"
 import ChatBox from "../../components/ChatBox"
-import { connectSocket, subscribeRoom, sendMessage } from "../../lib/socket"
+import { connectSocket, subscribeRoom, sendMessage, subscribePrivate } from "../../lib/socket"
 
-export default function Game(){
+export default function Game() {
 
 const params = useSearchParams()
 const room = params.get("room")
 
-const [question,setQuestion] = useState("")
-const [answer,setAnswer] = useState("")
-const [answers,setAnswers] = useState({})
-const [players,setPlayers] = useState([])
-const [phase,setPhase] = useState("answer")
-const [result,setResult] = useState(null)
+const [question, setQuestion] = useState("")
+const [answer, setAnswer] = useState("")
+const [answers, setAnswers] = useState({})
+const [players, setPlayers] = useState([])
+const [phase, setPhase] = useState("answer")
+const [result, setResult] = useState(null)
+const [myId , setMyId] = useState(null);
 
-useEffect(()=>{
+useEffect(() => {
 
-if(!room) return
+if (!room) return
 
-connectSocket()
+connectSocket(() => {
 
-// ask backend for question
-sendMessage("get-question", { roomId: room })
+  subscribePrivate("/queue/me", (data) => {
+    console.log("MY ID:", data.yourId)
+    setMyId(data.yourId)   // ✅ FIXED
+    localStorage.setItem("playerId", data.yourId)
+  })
 
-subscribeRoom(room,(data)=>{
+  subscribeRoom(room, (data) => {
 
-  console.log("GAME DATA:",data)
+    console.log("RAW DATA:", data)
 
-  // 🟣 QUESTION
-  if(data.text){
-    setQuestion(data.text)
-    setPhase("answer")
-  }
+    let parsed
 
-  // 🟣 ANSWERS
-  if(data.type === "answers"){
-    setAnswers(data.answers)
-    setPhase("discussion")
-  }
-
-  // 🟣 START VOTING
-  if(data === "start-voting"){
-    setPhase("vote")
-  }
-
-  // 🟣 RESULT
-  if(data.type === "result"){
-
-    setResult(data)
-    setPlayers(data.players)
-    setPhase("result")
-
-    playSound(sounds.reveal)
-
-    if(data.suspect === data.impostor){
-      confetti({
-        particleCount:150,
-        spread:70,
-        origin:{y:0.6}
-      })
-      playSound(sounds.win)
+    try {
+      parsed = JSON.parse(data)
+    } catch {
+      parsed = data
     }
-  }
+
+    console.log("PARSED:", parsed)
+
+    // 🟣 PLAYERS
+    if (parsed && parsed.type === "players") {
+      setPlayers(parsed.players)
+    }
+
+    // 🟣 ANSWERS
+    if (parsed && parsed.type === "answers") {
+      setAnswers(parsed.answers)
+      setPhase("discussion")
+    }
+
+    // 🟣 START VOTING
+    if (parsed === "start-voting") {
+      setPhase("vote")
+    }
+
+    // 🟣 RESULT
+    if (parsed && parsed.type === "result") {
+
+      setResult(parsed)
+      setPlayers(parsed.players)
+      setPhase("result")
+
+      playSound(sounds.reveal)
+
+      if (parsed.suspect === parsed.impostor) {
+        confetti({
+          particleCount: 150,
+          spread: 70,
+          origin: { y: 0.6 }
+        })
+        playSound(sounds.win)
+      }
+    }
+
+  })
 
 })
 
-},[room])
+}, [room])
 
-function submitAnswer(){
+// 🔥 NEW FIXED EFFECT (DO NOT TOUCH)
+useEffect(() => {
+  if (!myId) return
 
-  if(!answer){
-    alert("Write something first")
-    return
-  }
+  console.log("SUBSCRIBING TO:", `question-${myId}`)
 
-  sendMessage("answer",{roomId:room,answer})
+  subscribeRoom(`question-${myId}`, (data) => {
+    const parsed = JSON.parse(data)
+
+    console.log("SETTING QUESTION:", parsed.text)
+
+    setQuestion(parsed.text)
+    setPhase("answer")
+  })
+
+}, [myId])
+
+function submitAnswer() {
+
+if (!answer) {
+  alert("Write something first")
+  return
 }
 
-function vote(id){
-  sendMessage("vote",{roomId:room,vote:id})
+sendMessage("answer", { roomId: room, answer })
+
 }
 
-if(phase === "result"){
+function vote(id) {
+sendMessage("vote", { roomId: room, vote: id })
+}
 
-return(
+// 🟣 RESULT SCREEN
+if (phase === "result") {
+return ( <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-blue-900 text-white flex flex-col items-center justify-center p-6 gap-6">
 
-<div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-blue-900 text-white flex flex-col items-center justify-center p-6 gap-6">
+    <h2 className="text-3xl font-bold">
+      Round Result
+    </h2>
 
-<h2 className="text-3xl font-bold">
-Round Result
-</h2>
+    <div className="bg-white/10 backdrop-blur-lg p-6 rounded-xl text-center">
+      <p>Suspect: {result?.suspect}</p>
+      <p>Impostor: {result?.impostor}</p>
+    </div>
 
-<div className="bg-white/10 backdrop-blur-lg p-6 rounded-xl text-center">
-<p>Suspect: {result?.suspect}</p>
-<p>Impostor: {result?.impostor}</p>
-</div>
+    <ScoreBoard players={players} />
 
-<ScoreBoard players={players}/>
-
-</div>
-
+  </div>
 )
-
 }
 
-return(
+// 🟣 MAIN UI
+return ( <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-blue-900 text-white flex justify-center">
 
-<div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-blue-900 text-white flex justify-center">
+  <div className="w-full max-w-md flex flex-col gap-6 p-6">
 
-<div className="w-full max-w-md flex flex-col gap-6 p-6">
+    <h1 className="text-3xl text-center font-bold bg-gradient-to-r from-purple-400 to-blue-400 text-transparent bg-clip-text">
+      OddOneOut
+    </h1>
 
-<h1 className="text-3xl text-center font-bold bg-gradient-to-r from-purple-400 to-blue-400 text-transparent bg-clip-text">
-OddOneOut
-</h1>
+    <div className="bg-white/10 backdrop-blur-lg p-4 rounded-xl text-center">
+      {question || "Waiting for Question..."}
+    </div>
 
-<div className="bg-white/10 backdrop-blur-lg p-4 rounded-xl text-center">
-{question || "Waiting for Question..."}
-</div>
+    {/* 🟣 ANSWER PHASE */}
+    {phase === "answer" && (
+      <div className="flex flex-col gap-4">
 
-{phase === "answer" && (
+        <Timer seconds={45} trigger={phase} />
 
-<div className="flex flex-col gap-4">
+        <textarea
+          className="bg-black/40 border border-white/20 p-3 rounded-lg"
+          onChange={(e) => setAnswer(e.target.value)}
+        />
 
-<Timer seconds={45} trigger={phase} />
+        <button
+          onClick={submitAnswer}
+          className="bg-gradient-to-r from-purple-500 to-blue-500 p-3 rounded-lg font-semibold"
+        >
+          Submit Answer
+        </button>
 
-<textarea
-className="bg-black/40 border border-white/20 p-3 rounded-lg"
-onChange={(e)=>setAnswer(e.target.value)}
-/>
+      </div>
+    )}
 
-<button
-onClick={submitAnswer}
-className="bg-gradient-to-r from-purple-500 to-blue-500 p-3 rounded-lg font-semibold"
->
-Submit Answer
-</button>
+    {/* 🟣 DISCUSSION PHASE */}
+    {phase === "discussion" && (
+      <div className="flex flex-col gap-4">
 
-</div>
+        {Object.values(answers).map((a, i) => (
+          <AnswerCard key={i} answer={a} />
+        ))}
 
-)}
+        <ChatBox room={room} />
 
-{phase === "discussion" && (
+      </div>
+    )}
 
-<div className="flex flex-col gap-4">
+    {/* 🟣 VOTING PHASE */}
+    {phase === "vote" && (
+      <div className="flex flex-col gap-3">
 
-{Object.values(answers).map((a,i)=>(
-<AnswerCard key={i} answer={a}/>
-))}
+        <h2 className="text-center text-xl">
+          Vote the Impostor
+        </h2>
 
-<ChatBox room={room}/>
+        {players.map(p => (
+          <PlayerCard key={p.id} player={p} onVote={vote} />
+        ))}
 
-</div>
+      </div>
+    )}
 
-)}
-
-{phase === "vote" && (
-
-<div className="flex flex-col gap-3">
-
-<h2 className="text-center text-xl">
-Vote the Impostor
-</h2>
-
-{players.map(p=>(
-<PlayerCard key={p.id} player={p} onVote={vote}/>
-))}
-
-</div>
-
-)}
+  </div>
 
 </div>
-
-</div>
-
 )
-
 }

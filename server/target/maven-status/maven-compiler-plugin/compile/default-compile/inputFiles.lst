@@ -1,0 +1,9 @@
+/Users/aaryanbairagi/Desktop/oddOneOut/server/src/main/java/com/oddoneout/server/GameServerApplication.java
+/Users/aaryanbairagi/Desktop/oddOneOut/server/src/main/java/com/oddoneout/server/config/WebSocketConfig.java
+/Users/aaryanbairagi/Desktop/oddOneOut/server/src/main/java/com/oddoneout/server/controller/GameController.java
+/Users/aaryanbairagi/Desktop/oddOneOut/server/src/main/java/com/oddoneout/server/data/QuestionsData.java
+/Users/aaryanbairagi/Desktop/oddOneOut/server/src/main/java/com/oddoneout/server/model/Player.java
+/Users/aaryanbairagi/Desktop/oddOneOut/server/src/main/java/com/oddoneout/server/model/Question.java
+/Users/aaryanbairagi/Desktop/oddOneOut/server/src/main/java/com/oddoneout/server/model/Room.java
+/Users/aaryanbairagi/Desktop/oddOneOut/server/src/main/java/com/oddoneout/server/service/GameService.java
+/Users/aaryanbairagi/Desktop/oddOneOut/server/src/main/java/com/oddoneout/server/service/SchedulerService.java

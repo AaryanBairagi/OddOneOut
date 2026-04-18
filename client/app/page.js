@@ -1,84 +1,93 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { connectSocket, subscribeRoom, sendMessage } from "../lib/socket"
+import { connectSocket, sendMessage, subscribeUserQueue , subscribeRoom} from "../lib/socket"
 
 export default function Home(){
 
-const [name,setName] = useState("")
-const [room,setRoom] = useState("")
-const router = useRouter()
+  const [name,setName] = useState("")
+  const [room,setRoom] = useState("")
+  const router = useRouter()
 
-useEffect(()=>{
-  connectSocket()
-},[])
+  function create(){
+    if(!name) return
 
-function create(){
+    console.log("Create clicked")
 
-  if(!name) return
+    // 🔥 CONNECT + FLOW INSIDE CALLBACK
+    connectSocket(() => {
+      console.log("Socket connected")
 
-  sendMessage("create-room",{username:name})
+      // ✅ STEP 1: SUBSCRIBE FIRST
+      // subscribeUserQueue((roomId)=>{
+      //   console.log("Room created:", roomId)
 
-  // TEMP: listen for room creation
-  subscribeRoom("global",(data)=>{
-    if(typeof data === "string"){
-      router.push(`/lobby?room=${data}&name=${name}`)
-    }
-  })
-}
+      //   router.push(`/lobby?room=${roomId}&name=${name}`)
+      // })
+      subscribeRoom("global", (roomId) => {
+      console.log("Room created:", roomId)
 
-function join(){
-  router.push(`/lobby?room=${room}&name=${name}`)
-}
+      router.push(`/lobby?room=${roomId}&name=${name}`)
+    })
 
-return(
+      console.log("Subscribed to room-created")
 
-<div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-900 via-black to-blue-900">
+      // ✅ STEP 2: THEN SEND
+      sendMessage("create-room",{username:name})
+    })
+  }
 
-<div className="w-full max-w-md px-6">
+  function join(){
+    router.push(`/lobby?room=${room}&name=${name}`)
+  }
 
-<div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl p-8 flex flex-col gap-6 shadow-2xl">
+  return(
 
-<h1 className="text-5xl font-bold text-center bg-gradient-to-r from-purple-400 to-blue-400 text-transparent bg-clip-text">
-OddOneOut
-</h1>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-900 via-black to-blue-900">
 
-<p className="text-center text-white/60 text-sm">
-Find the impostor before they fool everyone.
-</p>
+      <div className="w-full max-w-md px-6">
 
-<input
-placeholder="Your Name"
-className="w-full p-3 rounded-lg bg-black/40 border border-white/20 text-white"
-onChange={(e)=>setName(e.target.value)}
-/>
+        <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl p-8 flex flex-col gap-6 shadow-2xl">
 
-<button
-onClick={create}
-className="w-full py-3 rounded-lg text-lg font-semibold bg-gradient-to-r from-purple-500 to-blue-500"
->
-Create Room
-</button>
+          <h1 className="text-5xl font-bold text-center bg-gradient-to-r from-purple-400 to-blue-400 text-transparent bg-clip-text">
+            OddOneOut
+          </h1>
 
-<input
-placeholder="Room Code"
-className="w-full p-3 rounded-lg bg-black/40 border border-white/20 text-white"
-onChange={(e)=>setRoom(e.target.value)}
-/>
+          <p className="text-center text-white/60 text-sm">
+            Find the impostor before they fool everyone.
+          </p>
 
-<button
-onClick={join}
-className="w-full py-3 rounded-lg text-lg font-semibold bg-gradient-to-r from-green-400 to-emerald-500"
->
-Join Room
-</button>
+          <input
+            placeholder="Your Name"
+            className="w-full p-3 rounded-lg bg-black/40 border border-white/20 text-white"
+            onChange={(e)=>setName(e.target.value)}
+          />
 
-</div>
+          <button
+            onClick={create}
+            className="w-full py-3 rounded-lg text-lg font-semibold bg-gradient-to-r from-purple-500 to-blue-500"
+          >
+            Create Room
+          </button>
 
-</div>
+          <input
+            placeholder="Room Code"
+            className="w-full p-3 rounded-lg bg-black/40 border border-white/20 text-white"
+            onChange={(e)=>setRoom(e.target.value)}
+          />
 
-</div>
+          <button
+            onClick={join}
+            className="w-full py-3 rounded-lg text-lg font-semibold bg-gradient-to-r from-green-400 to-emerald-500"
+          >
+            Join Room
+          </button>
 
-)
+        </div>
+
+      </div>
+
+    </div>
+  )
 }

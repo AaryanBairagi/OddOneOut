@@ -15,33 +15,40 @@ export default function LobbyInner() {
 
   useEffect(() => {
 
-    if (!room || !name) return
+  if (!room || !name) return
 
-    connectSocket()
+  connectSocket(() => {
+    console.log("Lobby socket connected")
 
-    // join room
-    sendMessage("join-room", { roomId: room, username: name })
-
-    // subscribe to room
+    // ✅ 1. SUBSCRIBE FIRST
     subscribeRoom(room, (data) => {
-      console.log("Lobby data:", data)
+    console.log("RAW DATA:", data, typeof data) // 👈 ADD THIS LINE
 
-      // players list
-      if (Array.isArray(data)) {
-        setPlayers(data)
-      }
+    console.log("Lobby data:", data)
 
-      // start game event
-      if (data === "start-game") {
-        router.push(`/game?room=${room}`)
-      }
+    if (Array.isArray(data)) {
+      setPlayers(data)
+    }
+
+    // 🔥 FIX CONDITION
+    const clean = typeof data === "string" ? data.replace(/"/g, "") : data
+
+    if (clean === "start-game") {
+      console.log("Navigating to game...")
+      router.push(`/game?room=${room}`)
+    }
     })
 
-  }, [room, name])
+    // ✅ 2. THEN SEND JOIN
+    sendMessage("join-room", { roomId: room, username: name })
+  })
 
-  function start() {
-    sendMessage("start-game", room)
-  }
+}, [room, name])
+
+function start() {
+  console.log("START BUTTON CLICKED")
+  sendMessage("start-game", { roomId: room })
+}
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-blue-900 flex items-center justify-center">
