@@ -9,7 +9,7 @@ import PlayerCard from "../../components/PlayerCard"
 import AnswerCard from "../../components/AnswerCard"
 import ScoreBoard from "../../components/ScoreBoard"
 import ChatBox from "../../components/ChatBox"
-import { connectSocket, subscribeRoom, sendMessage, subscribePrivate } from "../../lib/socket"
+import { connectSocket, subscribeRoom, sendMessage } from "../../lib/socket"
 
 export default function Game() {
 
@@ -22,7 +22,11 @@ const [answers, setAnswers] = useState({})
 const [players, setPlayers] = useState([])
 const [phase, setPhase] = useState("answer")
 const [result, setResult] = useState(null)
-const [myId , setMyId] = useState(null);
+
+// ✅ Correct: load from localStorage
+const [myId] = useState(() => {
+  return localStorage.getItem("playerId")
+})
 
 useEffect(() => {
 
@@ -30,18 +34,11 @@ if (!room) return
 
 connectSocket(() => {
 
-  subscribePrivate("/queue/me", (data) => {
-    console.log("MY ID:", data.yourId)
-    setMyId(data.yourId)   // ✅ FIXED
-    localStorage.setItem("playerId", data.yourId)
-  })
-
   subscribeRoom(room, (data) => {
 
     console.log("RAW DATA:", data)
 
     let parsed
-
     try {
       parsed = JSON.parse(data)
     } catch {
@@ -53,6 +50,16 @@ connectSocket(() => {
     // 🟣 PLAYERS
     if (parsed && parsed.type === "players") {
       setPlayers(parsed.players)
+    }
+
+    console.log("MY ID:", myId)
+    console.log("INCOMING ID:", parsed.playerId)
+
+    // 🟣 QUESTION (FINAL FIX)
+    if (parsed && parsed.text) {
+      console.log("🔥 FORCING QUESTION:", parsed.text)
+      setQuestion(parsed.text)
+      setPhase("answer")
     }
 
     // 🟣 ANSWERS
@@ -89,24 +96,7 @@ connectSocket(() => {
 
 })
 
-}, [room])
-
-// 🔥 NEW FIXED EFFECT (DO NOT TOUCH)
-useEffect(() => {
-  if (!myId) return
-
-  console.log("SUBSCRIBING TO:", `question-${myId}`)
-
-  subscribeRoom(`question-${myId}`, (data) => {
-    const parsed = JSON.parse(data)
-
-    console.log("SETTING QUESTION:", parsed.text)
-
-    setQuestion(parsed.text)
-    setPhase("answer")
-  })
-
-}, [myId])
+}, [room, myId])
 
 function submitAnswer() {
 
@@ -125,7 +115,8 @@ sendMessage("vote", { roomId: room, vote: id })
 
 // 🟣 RESULT SCREEN
 if (phase === "result") {
-return ( <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-blue-900 text-white flex flex-col items-center justify-center p-6 gap-6">
+return (
+  <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-blue-900 text-white flex flex-col items-center justify-center p-6 gap-6">
 
     <h2 className="text-3xl font-bold">
       Round Result
@@ -142,8 +133,11 @@ return ( <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blac
 )
 }
 
+console.log("RENDER QUESTION:", question)
+
 // 🟣 MAIN UI
-return ( <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-blue-900 text-white flex justify-center">
+return (
+<div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-blue-900 text-white flex justify-center">
 
   <div className="w-full max-w-md flex flex-col gap-6 p-6">
 
@@ -176,7 +170,7 @@ return ( <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blac
       </div>
     )}
 
-    {/* 🟣 DISCUSSION PHASE */}
+    {/* 🟣 DISCUSSION */}
     {phase === "discussion" && (
       <div className="flex flex-col gap-4">
 
@@ -189,7 +183,7 @@ return ( <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blac
       </div>
     )}
 
-    {/* 🟣 VOTING PHASE */}
+    {/* 🟣 VOTING */}
     {phase === "vote" && (
       <div className="flex flex-col gap-3">
 

@@ -43,8 +43,10 @@ public class GameController {
 }
 
     // JOIN ROOM
+    // @MessageMapping("/join-room")
+    // public void joinRoom(Map<String, String> payload) {
     @MessageMapping("/join-room")
-    public void joinRoom(Map<String, String> payload) {
+    public void joinRoom(@Payload Map<String, String> payload, @Header("simpSessionId") String sessionId) {
         String roomId = payload.get("roomId");
         String username = payload.get("username");
 
@@ -55,16 +57,25 @@ public class GameController {
         room.players.add(newPlayer);
 
         // ✅ send players to everyone (NO yourId here)
-        messagingTemplate.convertAndSend("/topic/" + roomId,
-            Map.of(
-                "type", "players",
-                "players", room.players
-            )
+        // messagingTemplate.convertAndSend("/topic/" + roomId,
+        //     Map.of(
+        //         "type", "players",
+        //         "players", room.players
+        //     )
+        // );
+        messagingTemplate.convertAndSend(
+        "/topic/" + roomId,
+        Map.of(
+            "type", "joined",
+            "yourId", newPlayer.id,
+            "username", username
+        )
         );
 
         // ✅ send personal ID ONLY to that user
         messagingTemplate.convertAndSendToUser(
-            newPlayer.id,
+            // newPlayer.id,
+            sessionId,
             "/queue/me",
             Map.of("yourId", newPlayer.id)
         );
@@ -72,16 +83,27 @@ public class GameController {
 
     // START GAME
     @MessageMapping("/start-game")
-    public void startGame(Map<String, String> payload) {
-        String roomId = payload.get("roomId");
+public void startGame(Map<String, String> payload) {
 
-        System.out.println("START GAME TRIGGERED for room: " + roomId);
+    String roomId = payload.get("roomId");
 
-        Room room = GameService.rooms.get(roomId);
-        if (room == null) return;
+    System.out.println("🔥 START GAME TRIGGERED for room: " + roomId);
 
-        room.round = 1;
-        startRound(roomId);
+    Room room = GameService.rooms.get(roomId);
+    System.out.println("ROOM DATA : " + room);
+
+    if (room == null) {
+        System.out.println("❌ ROOM NOT FOUND");
+        return;
+    }
+
+    room.round = 1;
+
+    // ✅ FIRST notify clients
+    messagingTemplate.convertAndSend("/topic/" + roomId, "start-game");
+
+    // ✅ THEN ACTUALLY START GAME
+    startRound(roomId);
     }
 
     // ================= GAME FLOW =================
@@ -104,7 +126,15 @@ public class GameController {
         messagingTemplate.convertAndSend("/topic/" + roomId, "start-game");
 
         // ⏱ send question after 800ms
-        scheduler.schedule(() -> sendQuestions(roomId), 800);
+        // scheduler.schedule(() -> sendQuestions(roomId), 2000);
+        new Thread(() -> {
+        try {
+            Thread.sleep(1000);
+        } catch (Exception e) {}
+
+        System.out.println("🔥 MANUAL THREAD RUNNING");
+        sendQuestions(roomId);
+        }).start();
 
         // ⏱ auto end answers after 45s
         scheduler.schedule(() -> {
@@ -126,11 +156,20 @@ public class GameController {
 
             System.out.println("SENDING TO USER: " + p.id + " TEXT: " + text);
 
-            messagingTemplate.convertAndSendToUser(
-                p.id,
-                "/queue/question",
-                Map.of("text", text, "round", room.round)
-            );
+            // messagingTemplate.convertAndSendToUser(
+            //     p.id,
+            //     "/queue/question",
+            //     Map.of("text", text, "round", room.round)
+            // );
+
+            messagingTemplate.convertAndSend(
+            "/topic/" + roomId,
+            Map.of(
+                "text", text,
+                "playerId", p.id,
+                "round", room.round
+            )
+        );
         }
     }
 
