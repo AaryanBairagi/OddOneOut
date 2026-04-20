@@ -6,7 +6,7 @@ public class Room {
     public List<Player> players = new ArrayList<>();
     public String host;
     public int round = 0;
-
+    public long roundStartTime;
     public Map<String, String> answers = new HashMap<>();
     public Map<String, String> votes = new HashMap<>();
 

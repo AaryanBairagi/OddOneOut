@@ -43,8 +43,6 @@ public class GameController {
 }
 
     // JOIN ROOM
-    // @MessageMapping("/join-room")
-    // public void joinRoom(Map<String, String> payload) {
     @MessageMapping("/join-room")
     public void joinRoom(@Payload Map<String, String> payload, @Header("simpSessionId") String sessionId) {
         String roomId = payload.get("roomId");
@@ -53,16 +51,24 @@ public class GameController {
         Room room = GameService.rooms.get(roomId);
         if (room == null) return;
 
+        boolean alreadyExists = room.players.stream().anyMatch(p -> p.name.equals(username));
+
+        if (alreadyExists) {
+            System.out.println("⚠️ Duplicate join prevented for: " + username);
+            return;
+        }
+
         Player newPlayer = new Player(UUID.randomUUID().toString(), username);
         room.players.add(newPlayer);
 
-        // ✅ send players to everyone (NO yourId here)
-        // messagingTemplate.convertAndSend("/topic/" + roomId,
-        //     Map.of(
-        //         "type", "players",
-        //         "players", room.players
-        //     )
-        // );
+        messagingTemplate.convertAndSend(
+        "/topic/" + roomId,
+        Map.of(
+            "type", "players",
+            "players", room.players
+        )
+        );
+
         messagingTemplate.convertAndSend(
         "/topic/" + roomId,
         Map.of(
@@ -116,6 +122,10 @@ public void startGame(Map<String, String> payload) {
         room.votes.clear();
         room.answered = false;
 
+        // 🔥 NEW (track round identity)
+        room.roundStartTime = System.currentTimeMillis();
+        long currentRoundTime = room.roundStartTime;
+
         int impostorIndex = new Random().nextInt(room.players.size());
         room.impostor = room.players.get(impostorIndex).id;
 
@@ -137,11 +147,20 @@ public void startGame(Map<String, String> payload) {
         }).start();
 
         // ⏱ auto end answers after 45s
+        // scheduler.schedule(() -> {
+        //     if (!room.answered) {
+        //         room.answered = true;
+        //         showAnswers(roomId);
+        //     }
+        // }, 45000);
         scheduler.schedule(() -> {
-            if (!room.answered) {
-                room.answered = true;
-                showAnswers(roomId);
-            }
+
+        if (room.roundStartTime != currentRoundTime) return;
+
+        if (!room.answered) {
+            room.answered = true;
+            showAnswers(roomId);
+        }
         }, 45000);
     }
 
@@ -178,13 +197,25 @@ public void startGame(Map<String, String> payload) {
     public void answer(Map<String, String> payload) {
         String roomId = payload.get("roomId");
         String answer = payload.get("answer");
+        String playerId = payload.get("playerId");
 
         Room room = GameService.rooms.get(roomId);
         if (room == null) return;
 
-        room.answers.put(UUID.randomUUID().toString(), answer);
+        // ❌ BLOCK SELF VOTE
+        if (playerId.equals(vote)) {
+            System.out.println("⚠️ Self vote blocked");
+            return;
+        }
 
-        if (!room.answered) {
+        // prevent duplicate answers
+        if (room.answers.containsKey(playerId)) {
+            return;
+        }
+
+        room.answers.put(playerId, answer);
+
+        if (room.answers.size() == room.players.size()) {
             room.answered = true;
             showAnswers(roomId);
         }
@@ -194,12 +225,19 @@ public void startGame(Map<String, String> payload) {
         Room room = GameService.rooms.get(roomId);
         if (room == null) return;
 
+        // messagingTemplate.convertAndSend("/topic/" + roomId,
+        //         Map.of("type", "answers", "answers", room.answers));
+
         messagingTemplate.convertAndSend("/topic/" + roomId,
-                Map.of("type", "answers", "answers", room.answers));
+        Map.of(
+            "type", "answers",
+            "answers", room.answers,
+            "players", room.players)
+        );
 
         scheduler.schedule(() -> {
             messagingTemplate.convertAndSend("/topic/" + roomId, "start-voting");
-        }, 240000);
+        }, 8000);
     }
 
     // VOTE
@@ -211,9 +249,14 @@ public void startGame(Map<String, String> payload) {
         Room room = GameService.rooms.get(roomId);
         if (room == null) return;
 
-        room.votes.put(UUID.randomUUID().toString(), vote);
+        // room.votes.put(UUID.randomUUID().toString(), vote);
+        String playerId = payload.get("playerId");
 
-        if (room.votes.size() >= 1) {
+        // prevent duplicate vote
+        if (room.votes.containsKey(playerId)) return;
+        room.votes.put(playerId, vote);
+
+        if (room.votes.size() == room.players.size()) {
             calculateVotes(roomId);
         }
     }
@@ -228,15 +271,33 @@ public void startGame(Map<String, String> payload) {
             count.put(v, count.getOrDefault(v, 0) + 1);
         }
 
+        // int max = 0;
+        // String suspect = null;
+
+        // for (String p : count.keySet()) {
+        //     if (count.get(p) > max) {
+        //         max = count.get(p);
+        //         suspect = p;
+        //     }
+        // }
+
         int max = 0;
-        String suspect = null;
+        List<String> top = new ArrayList<>();
 
         for (String p : count.keySet()) {
-            if (count.get(p) > max) {
-                max = count.get(p);
-                suspect = p;
+            int c = count.get(p);
+
+            if (c > max) {
+                max = c;
+                top.clear();
+                top.add(p);
+            } else if (c == max) {
+                top.add(p);
             }
         }
+
+        // 🔥 FINAL SUSPECT
+        String suspect = top.size() == 1 ? top.get(0) : null;
 
         Player suspectPlayer = null;
         Player impostorPlayer = null;
@@ -246,26 +307,37 @@ public void startGame(Map<String, String> payload) {
             if (p.id.equals(room.impostor)) impostorPlayer = p;
         }
 
-        for (Player p : room.players) {
-            if (p.id.equals(suspect) && suspect.equals(room.impostor)) {
-                p.score += 20;
-            }
+        // 🎯 CASE 1: impostor caught
+        if (suspect != null && suspect.equals(room.impostor)) {
 
-            if (!p.id.equals(suspect) && !p.id.equals(room.impostor)) {
-                p.score += 10;
+        for (Player p : room.players) {
+            String votedFor = room.votes.get(p.id);
+
+            if (votedFor != null && votedFor.equals(room.impostor)) {
+                p.score += 20; // correct voters
             }
         }
+    } else {
+    // 🎯 CASE 2: impostor survives
+        for (Player p : room.players) {
+            if (p.id.equals(room.impostor)) {
+                p.score += 30;
+            }
+        }
+        }
+    }
 
-        messagingTemplate.convertAndSend("/topic/" + roomId,
-                Map.of(
-                        "type", "result",
-                        "suspect", suspectPlayer != null ? suspectPlayer.name : "No one",
-                        "impostor", impostorPlayer != null ? impostorPlayer.name : "Unknown",
-                        "players", room.players
-                )
-        );
+    messagingTemplate.convertAndSend("/topic/" + roomId,
+    Map.of(
+        "type", "result",
+        "suspect", suspectPlayer != null ? suspectPlayer.name : "Tie",
+        "impostor", impostorPlayer != null ? impostorPlayer.name : "Unknown",
+        "players", room.players,
+        "votes", room.votes)
+    );
 
-        scheduler.schedule(() -> nextRound(roomId), 8000);
+    scheduler.schedule(() -> nextRound(roomId), 8000);
+
     }
 
     private void nextRound(String roomId) {

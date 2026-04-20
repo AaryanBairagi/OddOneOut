@@ -63,8 +63,14 @@ connectSocket(() => {
     }
 
     // 🟣 ANSWERS
+    // if (parsed && parsed.type === "answers") {
+    //   setAnswers(parsed.answers)
+    //   setPhase("discussion")
+    // }
+
     if (parsed && parsed.type === "answers") {
       setAnswers(parsed.answers)
+      setPlayers(parsed.players) 
       setPhase("discussion")
     }
 
@@ -105,21 +111,41 @@ if (!answer) {
   return
 }
 
-sendMessage("answer", { roomId: room, answer })
+// sendMessage("answer", { roomId: room, answer })
+sendMessage("answer", { 
+  roomId: room, 
+  answer,
+  playerId: myId
+})
 
 }
+
+// function vote(id) {
+//   sendMessage("vote", { roomId: room, vote: id })
+// }
 
 function vote(id) {
-sendMessage("vote", { roomId: room, vote: id })
+  sendMessage("vote", { 
+    roomId: room, 
+    vote: id,
+    playerId: myId
+  })
 }
+
 
 // 🟣 RESULT SCREEN
 if (phase === "result") {
 return (
   <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-blue-900 text-white flex flex-col items-center justify-center p-6 gap-6">
 
-    <h2 className="text-3xl font-bold">
+    {/* <h2 className="text-3xl font-bold">
       Round Result
+    </h2> */}
+
+    <h2 className="text-4xl font-bold text-center">
+    {result?.suspect === result?.impostor 
+    ? "🎯 Impostor Caught!" 
+    : "😈 Impostor Escaped!"}
     </h2>
 
     <div className="bg-white/10 backdrop-blur-lg p-6 rounded-xl text-center">
@@ -128,7 +154,20 @@ return (
     </div>
 
     <ScoreBoard players={players} />
+    <div className="bg-white/10 p-4 rounded-lg">
+    <h3 className="mb-2">Votes:</h3>
 
+    {Object.entries(result.votes || {}).map(([voter, voted]) => {
+      const voterName = players.find(p => p.id === voter)?.name
+      const votedName = players.find(p => p.id === voted)?.name
+
+      return (
+        <p key={voter}>
+          {voterName} ➝ {votedName}
+        </p>
+      )
+    })}
+    </div>
   </div>
 )
 }
@@ -191,9 +230,19 @@ return (
           Vote the Impostor
         </h2>
 
-        {players.map(p => (
-          <PlayerCard key={p.id} player={p} onVote={vote} />
-        ))}
+
+      {players.length === 0 ? (
+      <p className="text-center text-white/50">Waiting for players...</p>
+      ) : (
+        players.map(p => (
+        <PlayerCard 
+          key={p.id} 
+          player={p} 
+          onVote={vote}
+          disabled={p.id === myId}   // 🔥 ADD
+        />
+      ))
+    )}
 
       </div>
     )}

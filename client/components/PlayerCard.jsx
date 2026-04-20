@@ -3,11 +3,11 @@
 import { motion } from "framer-motion"
 import { playSound, sounds } from "../lib/sounds"
 
-export default function PlayerCard({ player, onVote, hasVoted }) {
+export default function PlayerCard({ player, onVote, hasVoted , disabled }) {
 
   function handleVote() {
 
-    if (hasVoted) return
+    if (hasVoted || disabled) return
 
     playSound(sounds.vote)
     onVote(player.id)
@@ -20,7 +20,7 @@ export default function PlayerCard({ player, onVote, hasVoted }) {
       whileTap={!hasVoted ? { scale: 0.95 } : {}}
       onClick={handleVote}
       className={`bg-white/10 backdrop-blur-lg border border-white/10 p-4 rounded-xl flex items-center justify-between transition
-      ${hasVoted ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:border-purple-400"}`}
+      ${ (hasVoted || disabled) ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:border-purple-400"}`}
     >
 
       <div className="flex items-center gap-3">
@@ -36,7 +36,7 @@ export default function PlayerCard({ player, onVote, hasVoted }) {
       </div>
 
       <span className="text-purple-400">
-        Vote
+        {disabled ? "You" : hasVoted ? "Voted" : "Vote"}
       </span>
 
     </motion.div>
