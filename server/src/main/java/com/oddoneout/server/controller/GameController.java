@@ -25,14 +25,16 @@ public class GameController {
 
     // CREATE ROOM
     @MessageMapping("/create-room")
-    public void createRoom(Map<String, String> payload) {
+    public void createRoom(@Payload Map<String, String> payload, 
+    @Header("simpSessionId") String sessionId) {
     String username = payload.get("username");
 
     String roomId = GameService.randomRoom();
 
     Room room = new Room();
     Player player = new Player(UUID.randomUUID().toString(), username);
-
+    player.sessionId = sessionId; // 🔥 ADD THIS
+    
     room.players.add(player);
     room.host = player.id;
 
@@ -59,6 +61,7 @@ public class GameController {
         }
 
         Player newPlayer = new Player(UUID.randomUUID().toString(), username);
+        newPlayer.sessionId = sessionId; // ✅ ADD THIS
         room.players.add(newPlayer);
 
         messagingTemplate.convertAndSend(
@@ -127,6 +130,7 @@ public class GameController {
         room.answers.clear();
         room.votes.clear();
         room.answered = false;
+        room.answersShown = false;
 
         // 🔥 NEW (track round identity)
         room.roundStartTime = System.currentTimeMillis();
@@ -142,14 +146,25 @@ public class GameController {
         // messagingTemplate.convertAndSend("/topic/" + roomId, "start-game");
 
         // ⏱ send question after 800ms
-        new Thread(() -> {
-        try {
-            Thread.sleep(4000);
-        } catch (Exception e) {}
+        // new Thread(() -> {
+        // try {
+        //     Thread.sleep(4000);
+        // } catch (Exception e) {}
 
-        System.out.println("🔥 MANUAL THREAD RUNNING");
+        // System.out.println("🔥 MANUAL THREAD RUNNING");
+        // sendQuestions(roomId);
+        // }).start();
+
+        scheduler.schedule(() -> {
+
+        Room r = GameService.rooms.get(roomId);
+        if (r == null) return;
+
+        // 🔥 ensure same round
+        if (r.roundStartTime != currentRoundTime) return;
+
         sendQuestions(roomId);
-        }).start();
+        }, 4000);
 
         // ⏱ auto end answers after 45s
         // scheduler.schedule(() -> {
@@ -178,47 +193,85 @@ public class GameController {
                     ? room.question.getImpostor()
                     : room.question.getNormal();
 
-            System.out.println("SENDING TO USER: " + p.id + " TEXT: " + text);
+            System.out.println("SENDING TO USER: " + p.sessionId + " TEXT: " + text);
 
-            messagingTemplate.convertAndSend(
-            "/topic/" + roomId + "/player/" + p.id,
-            Map.of(
-                "text", text,
-                // "playerId", p.id,
-                "isImpostor", p.id.equals(room.impostor),
-                "round", room.round
-            )
-        );
+        //     messagingTemplate.convertAndSendToUser(
+        //     "/topic/" + roomId + "/player/" + p.id,
+        //     Map.of(
+        //         "text", text,
+        //         // "playerId", p.id,
+        //         "isImpostor", p.id.equals(room.impostor),
+        //         "round", room.round
+        //     )
+        // );
+
+        messagingTemplate.convertAndSendToUser(
+        p.sessionId,
+        "/queue/game",
+        Map.of(
+            "text", text,
+            "isImpostor", p.id.equals(room.impostor),
+            "round", room.round
+        ));
         }
     }
 
     // ANSWER
+    // @MessageMapping("/answer")
+    // public void answer(Map<String, String> payload) {
+    //     String roomId = payload.get("roomId");
+    //     String answer = payload.get("answer");
+    //     String playerId = payload.get("playerId");
+
+    //     Room room = GameService.rooms.get(roomId);
+    //     if (room == null) return;
+
+    //     // prevent duplicate answers
+    //     if (room.answers.containsKey(playerId)) {
+    //         return;
+    //     }
+
+    //     room.answers.put(playerId, answer);
+
+    //     if (room.answers.size() == room.players.size()) {
+    //         room.answered = true;
+    //         showAnswers(roomId);
+    //     }
+    // }
+
     @MessageMapping("/answer")
     public void answer(Map<String, String> payload) {
-        String roomId = payload.get("roomId");
-        String answer = payload.get("answer");
-        String playerId = payload.get("playerId");
 
-        Room room = GameService.rooms.get(roomId);
-        if (room == null) return;
+    String roomId = payload.get("roomId");
+    String answer = payload.get("answer");
+    String playerId = payload.get("playerId");
 
-        // prevent duplicate answers
-        if (room.answers.containsKey(playerId)) {
-            return;
-        }
+    Room room = GameService.rooms.get(roomId);
+    if (room == null) return;
 
-        room.answers.put(playerId, answer);
+    long currentRoundTime = room.roundStartTime; // 🔥 ADD THIS
 
-        if (room.answers.size() == room.players.size()) {
-            room.answered = true;
-            showAnswers(roomId);
-        }
+    // prevent duplicate answers
+    if (room.answers.containsKey(playerId)) return;
+
+    room.answers.put(playerId, answer);
+
+    if (room.answers.size() == room.players.size()) {
+
+        // 🔥 PREVENT OLD ROUND TRIGGER
+        if (room.roundStartTime != currentRoundTime) return;
+
+        room.answered = true;
+        showAnswers(roomId);
     }
+}
 
     private void showAnswers(String roomId) {
         Room room = GameService.rooms.get(roomId);
         if (room == null) return;
 
+        if (room.answersShown) return; // 🔥 ADD THIS
+        room.answersShown = true;  
         // messagingTemplate.convertAndSend("/topic/" + roomId,
         //         Map.of("type", "answers", "answers", room.answers));
 

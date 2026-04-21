@@ -13,4 +13,5 @@ public class Room {
     public boolean answered = false;
     public String impostor;
     public Question question;
+    public boolean answersShown = false;
 }

@@ -9,7 +9,7 @@ import PlayerCard from "../../components/PlayerCard"
 import AnswerCard from "../../components/AnswerCard"
 import ScoreBoard from "../../components/ScoreBoard"
 import ChatBox from "../../components/ChatBox"
-import { connectSocket, subscribeRoom, sendMessage , subscribePrivate } from "../../lib/socket"
+import { connectSocket, subscribeRoom, sendMessage , subscribePrivateUser } from "../../lib/socket"
 
 export default function Game() {
 
@@ -53,22 +53,40 @@ useEffect(() => {
 
   console.log("🚀 SUBSCRIBING:", room, myId)
 
-  subscribePrivate(`${room}/player/${myId}`, (data) => {
-    let parsed
-    try { parsed = JSON.parse(data) } catch { parsed = data }
+  // subscribePrivate(`${room}/player/${myId}`, (data) => {
+  //   let parsed
+  //   try { parsed = JSON.parse(data) } catch { parsed = data }
 
-    console.log("🎯 PRIVATE:", parsed)
+  //   console.log("🎯 PRIVATE:", parsed)
 
-    if (parsed && parsed.text) {
-      setRole(parsed.isImpostor ? "impostor" : "crewmate")
-      setQuestion(parsed.text)
-      setPhase("role")
+  //   if (parsed && parsed.text) {
+  //     setRole(parsed.isImpostor ? "impostor" : "crewmate")
+  //     setQuestion(parsed.text)
+  //     setPhase("role")
 
-      setTimeout(() => {
-        setPhase("answer")
-      }, 2500)
-    }
-  })
+  //     setTimeout(() => {
+  //       setPhase("answer")
+  //     }, 2500)
+  //   }
+  // })
+
+  subscribePrivateUser((data) => {
+  let parsed
+  try { parsed = JSON.parse(data) } catch { parsed = data }
+
+  console.log("🎯 USER PRIVATE:", parsed)
+
+  if (parsed && parsed.text) {
+    setRole(parsed.isImpostor ? "impostor" : "crewmate")
+    setQuestion(parsed.text)
+
+    setPhase("role")
+
+    setTimeout(() => {
+      setPhase("answer")
+    }, 2500)
+  }
+})
 
   subscribeRoom(room, (data) => {
     let parsed

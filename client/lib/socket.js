@@ -91,3 +91,24 @@ export function subscribePrivate(destination, callback) {
     callback(msg.body)
   })
 }
+
+export function subscribePrivateUser(callback) {
+  if (!stompClient || !isConnected) {
+    console.log("⏳ Waiting for connection (user private)...");
+
+    setTimeout(() => {
+      subscribePrivateUser(callback);
+    }, 300);
+
+    return;
+  }
+
+  const fullPath = `/user/queue/game`;
+
+  console.log("🔐 SUBSCRIBING TO USER PRIVATE:", fullPath);
+
+  stompClient.subscribe(fullPath, (msg) => {
+    console.log("📩 USER PRIVATE RAW:", msg.body);
+    callback(msg.body);
+  });
+}
