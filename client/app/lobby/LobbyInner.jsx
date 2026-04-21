@@ -17,6 +17,8 @@ export default function LobbyInner() {
 
     if (!room || !name) return
 
+    localStorage.removeItem("playerId") 
+
     // 🔥 PREVENT DUPLICATE JOIN
     if (localStorage.getItem("joinedRoom") === room) {
       console.log("⚠️ Already joined, skipping...")
@@ -26,7 +28,6 @@ export default function LobbyInner() {
     connectSocket(() => {
       console.log("Lobby socket connected")
 
-      // ✅ FIXED SUBSCRIBE
       subscribeRoom(room, (data) => {
 
         console.log("RAW DATA:", data)
@@ -40,11 +41,10 @@ export default function LobbyInner() {
 
         console.log("PARSED:", parsed)
 
-        // 🔥 JOIN EVENT (SET MY ID)
         if (parsed && parsed.type === "joined") {
           console.log("JOIN EVENT:", parsed)
 
-          if (parsed.username === name && !localStorage.getItem("playerId")) {
+          if (!localStorage.getItem("playerId")) {
             console.log("✅ SETTING MY ID:", parsed.yourId)
             localStorage.setItem("playerId", parsed.yourId)
           }
@@ -54,11 +54,21 @@ export default function LobbyInner() {
           setPlayers(parsed.players)
         }
 
-        // 🔥 START GAME NAVIGATION
-        if (parsed === "start-game") {
-          console.log("Navigating to game...")
-          router.push(`/game?room=${room}`)
-        }
+
+      if (parsed === "start-game") {
+      console.log("🧠 START RECEIVED — waiting for playerId...")
+
+      const waitForId = setInterval(() => {
+      const id = localStorage.getItem("playerId")
+
+      if (id) {
+        clearInterval(waitForId)
+        console.log("✅ playerId ready, navigating:", id)
+
+        router.push(`/game?room=${room}`)
+      }
+    }, 100)
+    }
 
       })
 
@@ -70,17 +80,6 @@ export default function LobbyInner() {
 
   }, [room, name])
 
-  // function start() {
-  //   console.log("START BUTTON CLICKED")
-
-  //   connectSocket(() => {
-  //     console.log("🚀 ENSURED CONNECTION BEFORE START")
-
-  //     setTimeout(() => {
-  //       sendMessage("start-game", { roomId: room })
-  //     }, 200)
-  //   })
-  // }
 
 function start() {
   console.log("START BUTTON CLICKED")

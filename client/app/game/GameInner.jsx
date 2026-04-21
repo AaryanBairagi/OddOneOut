@@ -9,7 +9,7 @@ import PlayerCard from "../../components/PlayerCard"
 import AnswerCard from "../../components/AnswerCard"
 import ScoreBoard from "../../components/ScoreBoard"
 import ChatBox from "../../components/ChatBox"
-import { connectSocket, subscribeRoom, sendMessage } from "../../lib/socket"
+import { connectSocket, subscribeRoom, sendMessage , subscribePrivate } from "../../lib/socket"
 
 export default function Game() {
 
@@ -20,89 +20,80 @@ const [question, setQuestion] = useState("")
 const [answer, setAnswer] = useState("")
 const [answers, setAnswers] = useState({})
 const [players, setPlayers] = useState([])
-const [phase, setPhase] = useState("answer")
+const [phase, setPhase] = useState("loading") // "loading", "answer", "discussion", "vote", "result"
 const [result, setResult] = useState(null)
+const [myId, setMyId] = useState(null)
+const [role, setRole] = useState(null) // "impostor" or "crewmate"
+const [subscribed, setSubscribed] = useState(false)
 
-// ✅ Correct: load from localStorage
-const [myId] = useState(() => {
-  return localStorage.getItem("playerId")
-})
 
 useEffect(() => {
+  const waitForId = setInterval(() => {
+    const id = localStorage.getItem("playerId")
 
-if (!room) return
+    if (id) {
+      console.log("🔥 GOT ID:", id)
+      setMyId(id)
+      clearInterval(waitForId)
+    }
+  }, 100)
 
-connectSocket(() => {
+  return () => clearInterval(waitForId)
+}, [])
+
+useEffect(() => {
+  connectSocket(() => {
+    console.log("🔌 SOCKET READY")
+  })
+}, [])
+
+
+useEffect(() => {
+  if (!room || !myId || subscribed) return
+
+  console.log("🚀 SUBSCRIBING:", room, myId)
+
+  subscribePrivate(`${room}/player/${myId}`, (data) => {
+    let parsed
+    try { parsed = JSON.parse(data) } catch { parsed = data }
+
+    console.log("🎯 PRIVATE:", parsed)
+
+    if (parsed && parsed.text) {
+      setRole(parsed.isImpostor ? "impostor" : "crewmate")
+      setQuestion(parsed.text)
+      setPhase("role")
+
+      setTimeout(() => {
+        setPhase("answer")
+      }, 2500)
+    }
+  })
 
   subscribeRoom(room, (data) => {
-
-    console.log("RAW DATA:", data)
-
     let parsed
-    try {
-      parsed = JSON.parse(data)
-    } catch {
-      parsed = data
-    }
-
-    console.log("PARSED:", parsed)
-
-    // 🟣 PLAYERS
-    if (parsed && parsed.type === "players") {
-      setPlayers(parsed.players)
-    }
-
-    console.log("MY ID:", myId)
-    console.log("INCOMING ID:", parsed.playerId)
-
-    // 🟣 QUESTION (FINAL FIX)
-    if (parsed && parsed.text) {
-      console.log("🔥 FORCING QUESTION:", parsed.text)
-      setQuestion(parsed.text)
-      setPhase("answer")
-    }
-
-    // 🟣 ANSWERS
-    // if (parsed && parsed.type === "answers") {
-    //   setAnswers(parsed.answers)
-    //   setPhase("discussion")
-    // }
+    try { parsed = JSON.parse(data) } catch { parsed = data }
 
     if (parsed && parsed.type === "answers") {
       setAnswers(parsed.answers)
-      setPlayers(parsed.players) 
+      setPlayers(parsed.players)
       setPhase("discussion")
     }
 
-    // 🟣 START VOTING
     if (parsed === "start-voting") {
       setPhase("vote")
     }
 
-    // 🟣 RESULT
     if (parsed && parsed.type === "result") {
-
       setResult(parsed)
       setPlayers(parsed.players)
       setPhase("result")
-
-      playSound(sounds.reveal)
-
-      if (parsed.suspect === parsed.impostor) {
-        confetti({
-          particleCount: 150,
-          spread: 70,
-          origin: { y: 0.6 }
-        })
-        playSound(sounds.win)
-      }
     }
-
   })
 
-})
+  setSubscribed(true) 
 
-}, [room, myId])
+}, [room, myId, subscribed])
 
 function submitAnswer() {
 
@@ -111,7 +102,6 @@ if (!answer) {
   return
 }
 
-// sendMessage("answer", { roomId: room, answer })
 sendMessage("answer", { 
   roomId: room, 
   answer,
@@ -119,10 +109,6 @@ sendMessage("answer", {
 })
 
 }
-
-// function vote(id) {
-//   sendMessage("vote", { roomId: room, vote: id })
-// }
 
 function vote(id) {
   sendMessage("vote", { 
@@ -187,6 +173,14 @@ return (
     <div className="bg-white/10 backdrop-blur-lg p-4 rounded-xl text-center">
       {question || "Waiting for Question..."}
     </div>
+
+    {phase === "role" && (
+      <div className="text-center text-2xl font-bold mt-4">
+      {role === "impostor" 
+        ? "😈 You are the Impostor" 
+        : "🟢 You are a Crewmate"}
+      </div>
+    )}
 
     {/* 🟣 ANSWER PHASE */}
     {phase === "answer" && (

@@ -9,7 +9,7 @@ public class Room {
     public long roundStartTime;
     public Map<String, String> answers = new HashMap<>();
     public Map<String, String> votes = new HashMap<>();
-
+    public boolean gameStarted = false;
     public boolean answered = false;
     public String impostor;
     public Question question;

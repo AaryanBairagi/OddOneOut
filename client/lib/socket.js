@@ -38,24 +38,20 @@ export function connectSocket(onConnectCallback) {
 }
 
 export function subscribeRoom(roomId, callback) {
-  if (!stompClient) return;
+  if (!stompClient || !isConnected) {
+    console.log("⏳ Waiting for connection (room)...");
+
+    setTimeout(() => {
+      subscribeRoom(roomId, callback);
+    }, 300);
+
+    return;
+  }
+
+  console.log("✅ Subscribed to room:", roomId);
 
   stompClient.subscribe(`/topic/${roomId}`, (msg) => {
-    const data = msg.body;
-    callback(data);
-  });
-}
-
-// 🔥 THIS IS NEW (IMPORTANT)
-export function subscribePrivate(destination, callback) {
-  if (!stompClient) return;
-
-  console.log("SUBSCRIBING TO:", `/user${destination}`)
-
-  stompClient.subscribe(`/user${destination}`, (msg) => {
-    console.log("PRIVATE MSG RECEIVED:", msg.body)
-    const data = JSON.parse(msg.body)
-    callback(data)
+    callback(msg.body);
   });
 }
 
@@ -73,4 +69,25 @@ export function sendMessage(destination, payload) {
     destination: `/app/${destination}`,
     body: JSON.stringify(payload),
   });
+}
+
+export function subscribePrivate(destination, callback) {
+  if (!stompClient || !isConnected) {
+    console.log("⏳ Waiting for connection (private)...");
+
+    setTimeout(() => {
+      subscribePrivate(destination, callback);
+    }, 300);
+
+    return;
+  }
+
+  const fullPath = `/topic/${destination}`
+
+  console.log("🔌 SUBSCRIBING TO PRIVATE:", fullPath)
+
+  stompClient.subscribe(fullPath, (msg) => {
+    console.log("📩 PRIVATE MESSAGE RAW:", msg.body)
+    callback(msg.body)
+  })
 }

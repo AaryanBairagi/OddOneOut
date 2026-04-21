@@ -87,28 +87,34 @@ public class GameController {
         );
     }
 
-    // START GAME
+
     @MessageMapping("/start-game")
-public void startGame(Map<String, String> payload) {
+    public void startGame(Map<String, String> payload) {
 
     String roomId = payload.get("roomId");
 
-    System.out.println("🔥 START GAME TRIGGERED for room: " + roomId);
-
     Room room = GameService.rooms.get(roomId);
-    System.out.println("ROOM DATA : " + room);
+    if (room == null) return;
 
-    if (room == null) {
-        System.out.println("❌ ROOM NOT FOUND");
+    // // 🔥 ADD THIS GUARD
+    // if (room.round > 0) {
+    //     System.out.println("⚠️ Game already started, ignoring");
+    //     return;
+    // }
+
+    if (room.gameStarted) {
+        System.out.println("⚠️ Game already started, ignoring");
         return;
     }
 
-    room.round = 1;
+    room.gameStarted = true;
 
-    // ✅ FIRST notify clients
+    System.out.println("🔥 START GAME TRIGGERED for room: " + roomId);
+
+    room.round = 1;
+    room.gameStarted = true;
     messagingTemplate.convertAndSend("/topic/" + roomId, "start-game");
 
-    // ✅ THEN ACTUALLY START GAME
     startRound(roomId);
     }
 
@@ -133,13 +139,12 @@ public void startGame(Map<String, String> payload) {
         
         System.out.println("START GAME TRIGGERED for room: " + roomId);
 
-        messagingTemplate.convertAndSend("/topic/" + roomId, "start-game");
+        // messagingTemplate.convertAndSend("/topic/" + roomId, "start-game");
 
         // ⏱ send question after 800ms
-        // scheduler.schedule(() -> sendQuestions(roomId), 2000);
         new Thread(() -> {
         try {
-            Thread.sleep(1000);
+            Thread.sleep(4000);
         } catch (Exception e) {}
 
         System.out.println("🔥 MANUAL THREAD RUNNING");
@@ -175,17 +180,12 @@ public void startGame(Map<String, String> payload) {
 
             System.out.println("SENDING TO USER: " + p.id + " TEXT: " + text);
 
-            // messagingTemplate.convertAndSendToUser(
-            //     p.id,
-            //     "/queue/question",
-            //     Map.of("text", text, "round", room.round)
-            // );
-
             messagingTemplate.convertAndSend(
-            "/topic/" + roomId,
+            "/topic/" + roomId + "/player/" + p.id,
             Map.of(
                 "text", text,
-                "playerId", p.id,
+                // "playerId", p.id,
+                "isImpostor", p.id.equals(room.impostor),
                 "round", room.round
             )
         );
@@ -201,12 +201,6 @@ public void startGame(Map<String, String> payload) {
 
         Room room = GameService.rooms.get(roomId);
         if (room == null) return;
-
-        // ❌ BLOCK SELF VOTE
-        if (playerId.equals(vote)) {
-            System.out.println("⚠️ Self vote blocked");
-            return;
-        }
 
         // prevent duplicate answers
         if (room.answers.containsKey(playerId)) {
@@ -252,6 +246,12 @@ public void startGame(Map<String, String> payload) {
         // room.votes.put(UUID.randomUUID().toString(), vote);
         String playerId = payload.get("playerId");
 
+        // ❌ BLOCK SELF VOTE
+        if (playerId.equals(vote)) {
+            System.out.println("⚠️ Self vote blocked");
+            return;
+        }
+        
         // prevent duplicate vote
         if (room.votes.containsKey(playerId)) return;
         room.votes.put(playerId, vote);
@@ -270,16 +270,6 @@ public void startGame(Map<String, String> payload) {
         for (String v : room.votes.values()) {
             count.put(v, count.getOrDefault(v, 0) + 1);
         }
-
-        // int max = 0;
-        // String suspect = null;
-
-        // for (String p : count.keySet()) {
-        //     if (count.get(p) > max) {
-        //         max = count.get(p);
-        //         suspect = p;
-        //     }
-        // }
 
         int max = 0;
         List<String> top = new ArrayList<>();
@@ -325,7 +315,6 @@ public void startGame(Map<String, String> payload) {
             }
         }
         }
-    }
 
     messagingTemplate.convertAndSend("/topic/" + roomId,
     Map.of(
