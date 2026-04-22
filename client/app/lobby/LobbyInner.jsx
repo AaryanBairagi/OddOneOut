@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { connectSocket, subscribeRoom, sendMessage } from "@/lib/socket"
+import { connectSocket, subscribeRoom, sendMessage , subscribePrivateUser, subscribePrivate, subscribeMe } from "@/lib/socket"
 
 export default function LobbyInner() {
 
@@ -17,68 +17,53 @@ export default function LobbyInner() {
 
     if (!room || !name) return
 
-    localStorage.removeItem("playerId") 
+connectSocket(() => {
+  console.log("Lobby socket connected")
 
-    // 🔥 PREVENT DUPLICATE JOIN
-    if (localStorage.getItem("joinedRoom") === room) {
-      console.log("⚠️ Already joined, skipping...")
-      return
+  subscribeMe((data) => {
+  let parsed
+  try { parsed = JSON.parse(data) } catch { parsed = data }
+
+  if (parsed?.yourId) {
+    console.log("✅ GOT ID:", parsed.yourId)
+    sessionStorage.setItem("playerId", parsed.yourId)
+  }
+})
+
+
+  subscribeRoom(room, (data) => {
+    let parsed
+    try { parsed = JSON.parse(data) } catch { parsed = data }
+
+    if (parsed?.type === "players") {
+      setPlayers(parsed.players)
     }
 
-    connectSocket(() => {
-      console.log("Lobby socket connected")
+    const waitForIdAndNavigate = () => {
+    const id = sessionStorage.getItem("playerId")
 
-      subscribeRoom(room, (data) => {
-
-        console.log("RAW DATA:", data)
-
-        let parsed
-        try {
-          parsed = JSON.parse(data)
-        } catch {
-          parsed = data
-        }
-
-        console.log("PARSED:", parsed)
-
-        if (parsed && parsed.type === "joined") {
-          console.log("JOIN EVENT:", parsed)
-
-          if (!localStorage.getItem("playerId")) {
-            console.log("✅ SETTING MY ID:", parsed.yourId)
-            localStorage.setItem("playerId", parsed.yourId)
-          }
-        }
-
-        if (parsed && parsed.type === "players") {
-          setPlayers(parsed.players)
-        }
-
-
-      if (parsed === "start-game") {
-      console.log("🧠 START RECEIVED — waiting for playerId...")
-
-      const waitForId = setInterval(() => {
-      const id = localStorage.getItem("playerId")
-
-      if (id) {
-        clearInterval(waitForId)
-        console.log("✅ playerId ready, navigating:", id)
-
-        router.push(`/game?room=${room}`)
-      }
-    }, 100)
+    if (id) {
+      console.log("✅ navigating with id:", id)
+      router.push(`/game?room=${room}&id=${id}`)
+    } else {
+      console.log("⏳ waiting for id...")
+      setTimeout(waitForIdAndNavigate, 100)
     }
+  }
 
-      })
+    if (parsed === "start-game") {
+      console.log("🧠 START RECEIVED")
+      waitForIdAndNavigate();
+      // const id = sessionStorage.getItem("playerId")
+      // router.push(`/game?room=${room}&id=${id}`)
+    }
+  })
 
-      // ✅ SEND JOIN
-      sendMessage("join-room", { roomId: room, username: name })
-      localStorage.setItem("joinedRoom", room)
-      console.log("Sent join-room message with:", { roomId: room, username: name })
-    })
 
-  }, [room, name])
+  sendMessage("join-room", { roomId: room, username: name })
+})
+
+  }, [])
 
 
 function start() {

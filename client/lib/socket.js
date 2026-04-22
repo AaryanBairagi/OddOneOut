@@ -3,39 +3,79 @@ import { Client } from "@stomp/stompjs";
 
 let stompClient = null;
 let isConnected = false;
+let isConnecting = false; // 🔥 ADD THIS
 
 export function connectSocket(onConnectCallback) {
+
+  // ✅ already connected
   if (stompClient && isConnected) {
-    if (onConnectCallback) onConnectCallback();
-    return;
+    onConnectCallback?.()
+    return
   }
 
-  const socket = new SockJS("http://localhost:8080/ws");
+  // ❗ PREVENT DOUBLE CONNECT
+  if (isConnecting) {
+    console.log("⚠️ Already connecting, skipping...")
+    return
+  }
+
+  isConnecting = true
+
+  const socket = new SockJS("http://localhost:8080/ws")
 
   stompClient = new Client({
     webSocketFactory: () => socket,
     reconnectDelay: 5000,
 
     onConnect: () => {
-      console.log("Connected to Java WebSocket");
-      isConnected = true;
+      console.log("Connected to Java WebSocket")
+      isConnected = true
+      isConnecting = false
 
-      if (onConnectCallback) {
-        onConnectCallback();
-      }
+      onConnectCallback?.()
     },
 
     onDisconnect: () => {
-      isConnected = false;
-    },
-
-    onStompError: (frame) => {
-      console.error("STOMP error", frame);
+      isConnected = false
+      isConnecting = false
     }
-  });
+  })
 
-  stompClient.activate();
+  stompClient.activate()
 }
+
+// export function connectSocket(onConnectCallback) {
+//   if (stompClient && isConnected) {
+//     if (onConnectCallback) onConnectCallback();
+//     return;
+//   }
+
+//   const socket = new SockJS("http://localhost:8080/ws");
+
+//   stompClient = new Client({
+//     webSocketFactory: () => socket,
+//     reconnectDelay: 5000,
+
+//     onConnect: () => {
+//       console.log("Connected to Java WebSocket");
+//       isConnected = true;
+
+//       if (onConnectCallback) {
+//         onConnectCallback();
+//       }
+//     },
+
+//     onDisconnect: () => {
+//       isConnected = false;
+//     },
+
+//     onStompError: (frame) => {
+//       console.error("STOMP error", frame);
+//     }
+//   });
+
+//   stompClient.activate();
+// }
 
 export function subscribeRoom(roomId, callback) {
   if (!stompClient || !isConnected) {
@@ -93,22 +133,42 @@ export function subscribePrivate(destination, callback) {
 }
 
 export function subscribePrivateUser(callback) {
-  if (!stompClient || !isConnected) {
-    console.log("⏳ Waiting for connection (user private)...");
+  const trySubscribe = () => {
+    if (!stompClient || !isConnected) {
+      console.log("⏳ Waiting for connection (user private)...");
+      setTimeout(trySubscribe, 200); // retry until ready
+      return;
+    }
 
-    setTimeout(() => {
-      subscribePrivateUser(callback);
-    }, 300);
+    const fullPath = `/user/queue/game`;
 
-    return;
+    console.log("🔐 SUBSCRIBING TO USER PRIVATE:", fullPath);
+
+    stompClient.subscribe(fullPath, (msg) => {
+      console.log("📩 USER PRIVATE RAW:", msg.body);
+      callback(msg.body);
+    });
+  };
+
+  trySubscribe();
+}
+
+export function subscribeMe(callback) {
+  const trySubscribe = () => {
+    if (!stompClient || !isConnected) {
+      setTimeout(trySubscribe, 200)
+      return
+    }
+
+    const path = "/user/queue/me"
+
+    console.log("🔐 SUBSCRIBING TO:", path)
+
+    stompClient.subscribe(path, (msg) => {
+      console.log("📩 ME RAW:", msg.body)
+      callback(msg.body)
+    })
   }
 
-  const fullPath = `/user/queue/game`;
-
-  console.log("🔐 SUBSCRIBING TO USER PRIVATE:", fullPath);
-
-  stompClient.subscribe(fullPath, (msg) => {
-    console.log("📩 USER PRIVATE RAW:", msg.body);
-    callback(msg.body);
-  });
+  trySubscribe()
 }

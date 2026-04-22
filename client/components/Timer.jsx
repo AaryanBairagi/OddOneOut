@@ -5,7 +5,7 @@ import { motion } from "framer-motion"
 
 export default function Timer({ seconds, trigger }) {
 
-  const [time, setTime] = useState(seconds)
+  const [time, setTime] = useState(seconds || 0)
 
   useEffect(() => {
 

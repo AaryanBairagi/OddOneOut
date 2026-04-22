@@ -14,4 +14,5 @@ public class Room {
     public String impostor;
     public Question question;
     public boolean answersShown = false;
+    public boolean votesCalculated = false;
 }

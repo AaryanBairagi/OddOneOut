@@ -53,7 +53,7 @@ public class GameController {
         Room room = GameService.rooms.get(roomId);
         if (room == null) return;
 
-        boolean alreadyExists = room.players.stream().anyMatch(p -> p.name.equals(username));
+        boolean alreadyExists = room.players.stream().anyMatch(p -> p.sessionId.equals(sessionId));
 
         if (alreadyExists) {
             System.out.println("⚠️ Duplicate join prevented for: " + username);
@@ -72,14 +72,14 @@ public class GameController {
         )
         );
 
-        messagingTemplate.convertAndSend(
-        "/topic/" + roomId,
-        Map.of(
-            "type", "joined",
-            "yourId", newPlayer.id,
-            "username", username
-        )
-        );
+        // messagingTemplate.convertAndSend(
+        // "/topic/" + roomId,
+        // Map.of(
+        //     "type", "joined",
+        //     "yourId", newPlayer.id,
+        //     "username", username
+        // )
+        // );
 
         // ✅ send personal ID ONLY to that user
         messagingTemplate.convertAndSendToUser(
@@ -131,6 +131,7 @@ public class GameController {
         room.votes.clear();
         room.answered = false;
         room.answersShown = false;
+        room.votesCalculated = false;
 
         // 🔥 NEW (track round identity)
         room.roundStartTime = System.currentTimeMillis();
@@ -282,8 +283,16 @@ public class GameController {
             "players", room.players)
         );
 
+        // scheduler.schedule(() -> {
+        //     messagingTemplate.convertAndSend("/topic/" + roomId, "start-voting");
+        // }, 8000);
+        long roundTime = room.roundStartTime;
+
         scheduler.schedule(() -> {
-            messagingTemplate.convertAndSend("/topic/" + roomId, "start-voting");
+        Room r = GameService.rooms.get(roomId);
+        if (r == null || r.roundStartTime != roundTime) return;
+
+        messagingTemplate.convertAndSend("/topic/" + roomId, "start-voting");
         }, 8000);
     }
 
@@ -309,7 +318,10 @@ public class GameController {
         if (room.votes.containsKey(playerId)) return;
         room.votes.put(playerId, vote);
 
-        if (room.votes.size() == room.players.size()) {
+
+        if (!room.votesCalculated && room.votes.size() == room.players.size()) {
+            room.votesCalculated = true;
+            System.out.println("✅ ALL VOTES RECEIVED → calculating");
             calculateVotes(roomId);
         }
     }
@@ -378,8 +390,26 @@ public class GameController {
         "votes", room.votes)
     );
 
-    scheduler.schedule(() -> nextRound(roomId), 8000);
+    long roundTime = room.roundStartTime;
 
+    scheduler.schedule(() -> {
+        Room r = GameService.rooms.get(roomId);
+        if (r == null || r.roundStartTime != roundTime) return;
+
+        nextRound(roomId);
+    }, 8000);
+
+
+    scheduler.schedule(() -> {
+    Room r = GameService.rooms.get(roomId);
+    if (r == null || r.roundStartTime != roundTime) return;
+
+    if (!r.votesCalculated) {
+        r.votesCalculated = true;
+        calculateVotes(roomId);
+    }
+    }, 20000);
+    
     }
 
     private void nextRound(String roomId) {

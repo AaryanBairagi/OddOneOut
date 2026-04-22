@@ -3,7 +3,7 @@
 import { motion } from "framer-motion"
 import { playSound, sounds } from "../lib/sounds"
 
-export default function PlayerCard({ player, onVote, hasVoted , disabled }) {
+export default function PlayerCard({ player, onVote, hasVoted, disabled, selected }) { 
 
   function handleVote() {
 
@@ -20,8 +20,12 @@ export default function PlayerCard({ player, onVote, hasVoted , disabled }) {
       whileTap={!hasVoted ? { scale: 0.95 } : {}}
       onClick={handleVote}
       className={`bg-white/10 backdrop-blur-lg border border-white/10 p-4 rounded-xl flex items-center justify-between transition
+      ${selected 
+        ? "border-green-400 bg-green-500/20 scale-105"   // 🔥 highlight
+        : "border-white/10"}
+
       ${ (hasVoted || disabled) ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:border-purple-400"}`}
-    >
+      >
 
       <div className="flex items-center gap-3">
 
@@ -36,7 +40,13 @@ export default function PlayerCard({ player, onVote, hasVoted , disabled }) {
       </div>
 
       <span className="text-purple-400">
-        {disabled ? "You" : hasVoted ? "Voted" : "Vote"}
+        {disabled 
+          ? "You" 
+          : selected 
+          ? "Selected" 
+          : hasVoted 
+          ? "Voted" 
+          : "Vote"}
       </span>
 
     </motion.div>

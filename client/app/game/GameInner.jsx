@@ -9,12 +9,18 @@ import PlayerCard from "../../components/PlayerCard"
 import AnswerCard from "../../components/AnswerCard"
 import ScoreBoard from "../../components/ScoreBoard"
 import ChatBox from "../../components/ChatBox"
-import { connectSocket, subscribeRoom, sendMessage , subscribePrivateUser } from "../../lib/socket"
+import { connectSocket, subscribeRoom, sendMessage , subscribePrivateUser, subscribePrivate } from "../../lib/socket"
 
 export default function Game() {
 
 const params = useSearchParams()
 const room = params.get("room")
+
+const myId = params.get("id")
+if (!myId) {
+  console.error("❌ NO PLAYER ID — BLOCKING GAME")
+  return <div>Loading...</div>
+}
 
 const [question, setQuestion] = useState("")
 const [answer, setAnswer] = useState("")
@@ -22,24 +28,28 @@ const [answers, setAnswers] = useState({})
 const [players, setPlayers] = useState([])
 const [phase, setPhase] = useState("loading") // "loading", "answer", "discussion", "vote", "result"
 const [result, setResult] = useState(null)
-const [myId, setMyId] = useState(null)
+// const [myId, setMyId] = useState(null)
 const [role, setRole] = useState(null) // "impostor" or "crewmate"
 const [subscribed, setSubscribed] = useState(false)
+const [voted, setVoted] = useState(false)
+const [selectedVote, setSelectedVote] = useState(null)
 
 
-useEffect(() => {
-  const waitForId = setInterval(() => {
-    const id = localStorage.getItem("playerId")
 
-    if (id) {
-      console.log("🔥 GOT ID:", id)
-      setMyId(id)
-      clearInterval(waitForId)
-    }
-  }, 100)
+// useEffect(() => {
+//   const waitForId = setInterval(() => {
+//     // const id = localStorage.getItem("playerId")
+//     const id = sessionStorage.getItem("playerId")
 
-  return () => clearInterval(waitForId)
-}, [])
+//     if (id) {
+//       console.log("🔥 GOT ID:", id)
+//       setMyId(id)
+//       clearInterval(waitForId)
+//     }
+//   }, 100)
+
+//   return () => clearInterval(waitForId)
+// }, [])
 
 useEffect(() => {
   connectSocket(() => {
@@ -47,71 +57,59 @@ useEffect(() => {
   })
 }, [])
 
-
 useEffect(() => {
-  if (!room || !myId || subscribed) return
+  if (!room || subscribed) return
 
-  console.log("🚀 SUBSCRIBING:", room, myId)
+  connectSocket(() => {
+    console.log("🚀 SAFE SUBSCRIBE AFTER CONNECT")
 
-  // subscribePrivate(`${room}/player/${myId}`, (data) => {
-  //   let parsed
-  //   try { parsed = JSON.parse(data) } catch { parsed = data }
+    subscribePrivateUser((data) => {
+      let parsed
+      try { parsed = JSON.parse(data) } catch { parsed = data }
 
-  //   console.log("🎯 PRIVATE:", parsed)
+      console.log("🎯 USER PRIVATE:", parsed)
 
-  //   if (parsed && parsed.text) {
-  //     setRole(parsed.isImpostor ? "impostor" : "crewmate")
-  //     setQuestion(parsed.text)
-  //     setPhase("role")
+      if (parsed && parsed.text) {
+        setRole(parsed.isImpostor ? "impostor" : "crewmate")
+        setQuestion(parsed.text)
 
-  //     setTimeout(() => {
-  //       setPhase("answer")
-  //     }, 2500)
-  //   }
-  // })
+        setPhase("role")
 
-  subscribePrivateUser((data) => {
-  let parsed
-  try { parsed = JSON.parse(data) } catch { parsed = data }
+        setTimeout(() => {
+          setPhase("answer")
+        }, 2500)
+      }
+    })
 
-  console.log("🎯 USER PRIVATE:", parsed)
+    subscribeRoom(room, (data) => {
+      let parsed
+      try { parsed = JSON.parse(data) } catch { parsed = data }
 
-  if (parsed && parsed.text) {
-    setRole(parsed.isImpostor ? "impostor" : "crewmate")
-    setQuestion(parsed.text)
+      if (parsed?.type === "answers") {
+        setAnswers(parsed.answers)
+        setPlayers(parsed.players)
+        setPhase("discussion")
+      }
 
-    setPhase("role")
+      if (parsed === "start-voting") {
+        setPhase("vote")
+      }
 
-    setTimeout(() => {
-      setPhase("answer")
-    }, 2500)
-  }
-})
+      if (parsed?.type === "result") {
+        setResult(parsed)
+        setPlayers(parsed.players)
+        setPhase("result")
+        setVoted(false)
+        setSelectedVote(null)
+      }
+    })
 
-  subscribeRoom(room, (data) => {
-    let parsed
-    try { parsed = JSON.parse(data) } catch { parsed = data }
-
-    if (parsed && parsed.type === "answers") {
-      setAnswers(parsed.answers)
-      setPlayers(parsed.players)
-      setPhase("discussion")
-    }
-
-    if (parsed === "start-voting") {
-      setPhase("vote")
-    }
-
-    if (parsed && parsed.type === "result") {
-      setResult(parsed)
-      setPlayers(parsed.players)
-      setPhase("result")
-    }
+    setSubscribed(true)
   })
 
-  setSubscribed(true) 
+}, [room, subscribed])
 
-}, [room, myId, subscribed])
+
 
 function submitAnswer() {
 
@@ -129,11 +127,17 @@ sendMessage("answer", {
 }
 
 function vote(id) {
+  if (voted) return // prevent multiple clicks
+
+  setSelectedVote(id)   // 🔥 highlight immediately
+
   sendMessage("vote", { 
     roomId: room, 
     vote: id,
     playerId: myId
   })
+
+  setVoted(true)
 }
 
 
@@ -241,7 +245,8 @@ return (
         <h2 className="text-center text-xl">
           Vote the Impostor
         </h2>
-
+        
+        <Timer seconds={20} key={phase} />
 
       {players.length === 0 ? (
       <p className="text-center text-white/50">Waiting for players...</p>
@@ -251,12 +256,20 @@ return (
           key={p.id} 
           player={p} 
           onVote={vote}
-          disabled={p.id === myId}   // 🔥 ADD
+          disabled={p.id === myId || voted}
+          hasVoted={voted} 
+          selected={selectedVote === p.id}  
         />
       ))
     )}
-
+    
+     {voted && (
+      <p className="text-center text-green-400 mt-2">
+       ✅ Vote submitted
+      </p>
+      )}
       </div>
+ 
     )}
 
   </div>
