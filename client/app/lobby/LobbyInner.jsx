@@ -73,13 +73,13 @@ export default function LobbyInner() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-blue-900 flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-[#0B1D3A] via-[#081224] to-black flex items-center justify-center">
 
       <div className="w-full max-w-md px-6">
 
         <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl p-6 shadow-xl flex flex-col gap-6">
 
-          <h1 className="text-3xl font-bold text-center bg-gradient-to-r from-purple-400 to-blue-400 text-transparent bg-clip-text">
+          <h1 className="text-3xl font-bold text-center bg-gradient-to-r  bg-blue-400 text-transparent bg-clip-text">
             Lobby
           </h1>
 
@@ -100,7 +100,7 @@ export default function LobbyInner() {
 
           <button
             onClick={start}
-            className="w-full py-3 rounded-lg font-semibold text-lg bg-gradient-to-r from-purple-500 to-blue-500"
+            className="w-full py-3 rounded-lg font-semibold text-lg bg-yellow-700 hover:bg-yellow-800 text-white transition"
           >
             Start Game
           </button>

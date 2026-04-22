@@ -10,17 +10,12 @@ import AnswerCard from "../../components/AnswerCard"
 import ScoreBoard from "../../components/ScoreBoard"
 import ChatBox from "../../components/ChatBox"
 import { connectSocket, subscribeRoom, sendMessage , subscribePrivateUser, subscribePrivate } from "../../lib/socket"
+import Image from "next/image"
 
 export default function Game() {
 
 const params = useSearchParams()
 const room = params.get("room")
-
-// const myId = params.get("id")
-// if (!myId) {
-//   console.error("❌ NO PLAYER ID — BLOCKING GAME")
-//   return <div>Loading...</div>
-// }
 
 const [question, setQuestion] = useState("")
 const [answer, setAnswer] = useState("")
@@ -135,7 +130,7 @@ function vote(id) {
 // 🟣 RESULT SCREEN
 if (phase === "result") {
 return (
-  <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-blue-900 text-white flex flex-col items-center justify-center p-6 gap-6">
+  <div className="min-h-screen bg-gradient-to-br from-[#0B1D3A] via-[#081224] to-black text-white flex flex-col items-center justify-center p-6 gap-6">
 
     {/* <h2 className="text-3xl font-bold">
       Round Result
@@ -173,98 +168,200 @@ return (
 
 console.log("RENDER QUESTION:", question)
 
-// 🟣 MAIN UI
-return (
-<div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-blue-900 text-white flex justify-center">
+// // 🟣 MAIN UI
+// return (
+//   <div className="min-h-screen bg-gradient-to-br from-[#0B1D3A] via-[#081224] to-black 
+//                 flex items-center justify-center px-4">
 
-  <div className="w-full max-w-md flex flex-col gap-6 p-6">
+//   <div className="w-full max-w-md">
 
-    <h1 className="text-3xl text-center font-bold bg-gradient-to-r from-purple-400 to-blue-400 text-transparent bg-clip-text">
-      OddOneOut
-    </h1>
+//     <div className="bg-white/5 backdrop-blur-xl border border-white/10 
+//                     rounded-3xl p-6 flex flex-col gap-5 shadow-2xl">
 
-    <div className="bg-white/10 backdrop-blur-lg p-4 rounded-xl text-center">
-      {question || "Waiting for Question..."}
-    </div>
+//       {/* 🧠 ROLE SECTION */}
+//       <div className="flex flex-col items-center gap-2">
 
-    {phase === "role" && (
-      <div className="text-center text-2xl font-bold mt-4">
-      {role === "impostor" 
-        ? "😈 You are the Impostor" 
-        : "🟢 You are a Crewmate"}
-      </div>
-    )}
+//         <Image
+//           src={isImpostor ? "/assets/impostor.png" : "/assets/crewmate.png"}
+//           width={80}
+//           height={80}
+//           alt="role"
+//         />
 
-    {/* 🟣 ANSWER PHASE */}
-    {phase === "answer" && (
-      <div className="flex flex-col gap-4">
+//         <h2 className="text-lg font-semibold text-yellow-400">
+//           {isImpostor ? "You are the Impostor" : "You are a Crewmate"}
+//         </h2>
 
-        <Timer seconds={45} key={phase} />
+//       </div>
 
-        <textarea
-          className="bg-black/40 border border-white/20 p-3 rounded-lg"
-          onChange={(e) => setAnswer(e.target.value)}
-        />
+//       {/* ❓ QUESTION */}
+//       <div className="bg-[#0f2a52] border border-yellow-500/20 
+//                       rounded-xl p-4 text-center text-white">
+//         {question}
+//       </div>
 
-        <button
-          onClick={submitAnswer}
-          className="bg-gradient-to-r from-purple-500 to-blue-500 p-3 rounded-lg font-semibold"
-        >
-          Submit Answer
-        </button>
+//       {/* ⏱ TIMER */}
+//       <Timer time={time} key={phase} />
 
-      </div>
-    )}
+//       {/* 💬 INPUT */}
+//       <textarea
+//         value={answer}
+//         onChange={(e) => setAnswer(e.target.value)}
+//         placeholder="Type your answer..."
+//         className="w-full bg-black/40 border border-white/20 
+//                    rounded-xl p-3 text-white placeholder-white/40 
+//                    focus:outline-none focus:ring-2 focus:ring-yellow-400"
+//       />
 
-    {/* 🟣 DISCUSSION */}
-    {phase === "discussion" && (
-      <div className="flex flex-col gap-4">
+//       {/* 🚀 BUTTON */}
+//       <button
+//         onClick={submitAnswer}
+//         className="w-full py-3 rounded-xl font-semibold text-lg 
+//                    bg-gradient-to-r bg-yellow-600 hover-yellow-800
+//                    text-black active:scale-95 transition-transform">
+//         Submit Answer
+//       </button>
 
-        {Object.values(answers).map((a, i) => (
-          <AnswerCard key={i} answer={a} />
-        ))}
+//     </div>
 
-        <ChatBox room={room} />
+//   </div>
+//   </div>
+//     )}
 
-      </div>
-    )}
+//     {phase === "discussion" && (
+//       <div className="flex flex-col gap-4">
 
-    {/* 🟣 VOTING */}
-    {phase === "vote" && (
-      <div className="flex flex-col gap-3">
+//         {Object.values(answers).map((a, i) => (
+//           <AnswerCard key={i} answer={a} />
+//         ))}
 
-        <h2 className="text-center text-xl">
-          Vote the Impostor
-        </h2>
+//         <ChatBox
+//           answer={answer}
+//           setAnswer={setAnswer}
+//           submit={submitAnswer}
+//         />
+
+//       </div>
+//     )}
+
+//     {/* 🟣 VOTING */}
+//     {phase === "vote" && (
+//       <div className="flex flex-col gap-3">
+
+//         <h2 className="text-center text-xl">
+//           Vote the Impostor
+//         </h2>
         
-        <Timer seconds={20} key={phase} />
+//         <Timer seconds={20} key={phase} />
 
-      {players.length === 0 ? (
-      <p className="text-center text-white/50">Waiting for players...</p>
-      ) : (
-        players.map(p => (
-        <PlayerCard 
-          key={p.id} 
-          player={p} 
-          onVote={vote}
-          disabled={p.id === myId || voted}
-          hasVoted={voted} 
-          selected={selectedVote === p.id}  
-        />
-      ))
-    )}
+//       {players.length === 0 ? (
+//       <p className="text-center text-white/50">Waiting for players...</p>
+//       ) : (
+//         players.map(p => (
+//         <PlayerCard 
+//           key={p.id} 
+//           player={p} 
+//           onVote={vote}
+//           disabled={p.id === myId || voted}
+//           hasVoted={voted} 
+//           selected={selectedVote === p.id}  
+//         />
+//       ))
+//     )}
     
-     {voted && (
-      <p className="text-center text-green-400 mt-2">
-       ✅ Vote submitted
-      </p>
-      )}
-      </div>
+//      {voted && (
+//       <p className="text-center text-green-400 mt-2">
+//        ✅ Vote submitted
+//       </p>
+//       )}
+//       </div>
  
-    )}
+//     )}
 
+
+return (
+  <div className="min-h-screen bg-gradient-to-br from-[#0B1D3A] via-[#081224] to-black 
+                  flex items-center justify-center px-4">
+
+    <div className="w-full max-w-md">
+
+      {/* 🟣 ANSWER PHASE */}
+      {phase === "answer" && (
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 
+                        rounded-3xl p-6 flex flex-col items-center gap-5 shadow-2xl">
+             <Image
+               src={role==="impostor" ? "/assets/impostor.png" : "/assets/crewmate.png"}
+               width={80}
+               height={80}
+               alt="role"
+               className="text-center "
+             />
+
+          <div className="text-center text-white/20 font-semibold">
+            {role === "impostor" ? "You are the Impostor" : "You are a Crewmate"}
+          </div>
+
+          <div className="bg-[#0f2a52] rounded-xl p-4 text-white text-center">
+            {question}
+          </div>
+
+          <Timer key={phase} seconds={45} />
+
+          <textarea
+            value={answer}
+            onChange={(e) => setAnswer(e.target.value)}
+            className="w-full bg-black/40 p-3 rounded-xl text-white"
+          />
+
+          <button onClick={submitAnswer} className="bg-yellow-700 hover:bg-yellow-800 transition-colors w-full text-white py-2 rounded-xl">
+            Submit
+          </button>
+
+        </div>
+      )}
+
+      {/* 🟣 DISCUSSION */}
+      {phase === "discussion" && (
+        <div className="flex flex-col gap-4">
+
+          {Object.values(answers).map((a, i) => (
+            <AnswerCard key={i} answer={a} />
+          ))}
+
+          <ChatBox
+            answer={answer}
+            setAnswer={setAnswer}
+            submit={submitAnswer}
+          />
+
+        </div>
+      )}
+
+      {/* 🟣 VOTING */}
+      {phase === "vote" && (
+        <div className="flex flex-col gap-3">
+
+          <h2 className="text-center text-xl text-white">
+            Vote the Impostor
+          </h2>
+
+          <Timer key={phase} seconds={20} />
+
+          {players.map(p => (
+            <PlayerCard 
+              key={p.id} 
+              player={p} 
+              onVote={vote}
+              disabled={p.id === myId || voted}
+              hasVoted={voted} 
+              selected={selectedVote === p.id}  
+            />
+          ))}
+
+        </div>
+      )}
+
+    </div>
   </div>
-
-</div>
 )
 }

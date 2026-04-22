@@ -44,13 +44,13 @@ export default function Home(){
 
   return(
 
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-900 via-black to-blue-900">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0B1D3A] via-[#081224] to-black">
 
       <div className="w-full max-w-md px-6">
 
         <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl p-8 flex flex-col gap-6 shadow-2xl">
 
-          <h1 className="text-5xl font-bold text-center bg-gradient-to-r from-purple-400 to-blue-400 text-transparent bg-clip-text">
+          <h1 className="text-5xl font-bold text-center bg-gradient-to-r bg-blue-400  text-transparent bg-clip-text">
             OddOneOut
           </h1>
 
@@ -66,7 +66,7 @@ export default function Home(){
 
           <button
             onClick={create}
-            className="w-full py-3 rounded-lg text-lg font-semibold bg-gradient-to-r from-purple-500 to-blue-500"
+            className="w-full py-3 rounded-lg text-lg font-semibold bg-white/20 hover:bg-white/30 transition-colors duration-300 text-white"
           >
             Create Room
           </button>
@@ -79,7 +79,7 @@ export default function Home(){
 
           <button
             onClick={join}
-            className="w-full py-3 rounded-lg text-lg font-semibold bg-gradient-to-r from-green-400 to-emerald-500"
+            className="w-full py-3 rounded-lg text-lg font-semibold bg-yellow-700 hover:bg-yellow-800  transition-colors duration-300 "
           >
             Join Room
           </button>
