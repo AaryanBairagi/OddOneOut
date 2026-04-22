@@ -16,11 +16,11 @@ export default function Game() {
 const params = useSearchParams()
 const room = params.get("room")
 
-const myId = params.get("id")
-if (!myId) {
-  console.error("❌ NO PLAYER ID — BLOCKING GAME")
-  return <div>Loading...</div>
-}
+// const myId = params.get("id")
+// if (!myId) {
+//   console.error("❌ NO PLAYER ID — BLOCKING GAME")
+//   return <div>Loading...</div>
+// }
 
 const [question, setQuestion] = useState("")
 const [answer, setAnswer] = useState("")
@@ -28,28 +28,12 @@ const [answers, setAnswers] = useState({})
 const [players, setPlayers] = useState([])
 const [phase, setPhase] = useState("loading") // "loading", "answer", "discussion", "vote", "result"
 const [result, setResult] = useState(null)
-// const [myId, setMyId] = useState(null)
+const [myId, setMyId] = useState(null)
 const [role, setRole] = useState(null) // "impostor" or "crewmate"
 const [subscribed, setSubscribed] = useState(false)
 const [voted, setVoted] = useState(false)
 const [selectedVote, setSelectedVote] = useState(null)
 
-
-
-// useEffect(() => {
-//   const waitForId = setInterval(() => {
-//     // const id = localStorage.getItem("playerId")
-//     const id = sessionStorage.getItem("playerId")
-
-//     if (id) {
-//       console.log("🔥 GOT ID:", id)
-//       setMyId(id)
-//       clearInterval(waitForId)
-//     }
-//   }, 100)
-
-//   return () => clearInterval(waitForId)
-// }, [])
 
 useEffect(() => {
   connectSocket(() => {
@@ -63,23 +47,30 @@ useEffect(() => {
   connectSocket(() => {
     console.log("🚀 SAFE SUBSCRIBE AFTER CONNECT")
 
-    subscribePrivateUser((data) => {
-      let parsed
-      try { parsed = JSON.parse(data) } catch { parsed = data }
+  subscribePrivateUser((data) => {
+  let parsed
+  try { parsed = JSON.parse(data) } catch { parsed = data }
 
-      console.log("🎯 USER PRIVATE:", parsed)
+  console.log("🎯 USER PRIVATE:", parsed)
 
-      if (parsed && parsed.text) {
-        setRole(parsed.isImpostor ? "impostor" : "crewmate")
-        setQuestion(parsed.text)
+  // 🔥 ADD THIS
+  if (parsed?.playerId) {
+    console.log("✅ SETTING PLAYER ID:", parsed.playerId)
+    setMyId(parsed.playerId)
+    sessionStorage.setItem("playerId", parsed.playerId)
+  }
 
-        setPhase("role")
+  if (parsed?.text) {
+    setRole(parsed.isImpostor ? "impostor" : "crewmate")
+    setQuestion(parsed.text)
 
-        setTimeout(() => {
-          setPhase("answer")
-        }, 2500)
-      }
-    })
+    setPhase("role")
+
+    setTimeout(() => {
+      setPhase("answer")
+    }, 2500)
+  }
+})
 
     subscribeRoom(room, (data) => {
       let parsed
@@ -208,7 +199,7 @@ return (
     {phase === "answer" && (
       <div className="flex flex-col gap-4">
 
-        <Timer seconds={45} trigger={phase} />
+        <Timer seconds={45} key={phase} />
 
         <textarea
           className="bg-black/40 border border-white/20 p-3 rounded-lg"

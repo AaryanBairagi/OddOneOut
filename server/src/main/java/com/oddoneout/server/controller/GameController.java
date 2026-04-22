@@ -8,6 +8,8 @@ import com.oddoneout.server.data.QuestionsData;
 import org.springframework.messaging.handler.annotation.*;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
+import org.springframework.messaging.simp.SimpMessageType;
 
 import java.util.*;
 
@@ -44,52 +46,111 @@ public class GameController {
     messagingTemplate.convertAndSend("/topic/global", roomId);
 }
 
-    // JOIN ROOM
+    // // JOIN ROOM
+    // @MessageMapping("/join-room")
+    // public void joinRoom(@Payload Map<String, String> payload, @Header("simpSessionId") String sessionId) {
+    //     String roomId = payload.get("roomId");
+    //     String username = payload.get("username");
+
+    //     Room room = GameService.rooms.get(roomId);
+    //     if (room == null) return;
+
+    //     boolean alreadyExists = room.players.stream().anyMatch(p -> p.sessionId.equals(sessionId));
+
+    //     if (alreadyExists) {
+    //         System.out.println("⚠️ Duplicate join prevented for: " + username);
+    //         return;
+    //     }
+
+    //     Player newPlayer = new Player(UUID.randomUUID().toString(), username);
+    //     newPlayer.sessionId = sessionId; // ✅ ADD THIS
+    //     room.players.add(newPlayer);
+
+    //     messagingTemplate.convertAndSend(
+    //     "/topic/" + roomId,
+    //     Map.of(
+    //         "type", "players",
+    //         "players", room.players
+    //     )
+    //     );
+
+    //     // messagingTemplate.convertAndSend(
+    //     // "/topic/" + roomId,
+    //     // Map.of(
+    //     //     "type", "joined",
+    //     //     "yourId", newPlayer.id,
+    //     //     "username", username
+    //     // )
+    //     // );
+
+    //     // ✅ send personal ID ONLY to that user
+    //     messagingTemplate.convertAndSendToUser(
+    //         // newPlayer.id,
+    //         sessionId,
+    //         "/queue/me",
+    //         Map.of("yourId", newPlayer.id)
+    //     );
+    // }
+
     @MessageMapping("/join-room")
-    public void joinRoom(@Payload Map<String, String> payload, @Header("simpSessionId") String sessionId) {
-        String roomId = payload.get("roomId");
-        String username = payload.get("username");
+    public void joinRoom(@Payload Map<String, String> payload,
+                     @Header("simpSessionId") String sessionId) {
 
-        Room room = GameService.rooms.get(roomId);
-        if (room == null) return;
+    String roomId = payload.get("roomId");
+    String username = payload.get("username");
 
-        boolean alreadyExists = room.players.stream().anyMatch(p -> p.sessionId.equals(sessionId));
+    Room room = GameService.rooms.get(roomId);
+    if (room == null) return;
 
-        if (alreadyExists) {
-            System.out.println("⚠️ Duplicate join prevented for: " + username);
-            return;
-        }
+    boolean alreadyExists = room.players.stream()
+            .anyMatch(p -> p.sessionId.equals(sessionId));
 
-        Player newPlayer = new Player(UUID.randomUUID().toString(), username);
-        newPlayer.sessionId = sessionId; // ✅ ADD THIS
-        room.players.add(newPlayer);
-
-        messagingTemplate.convertAndSend(
-        "/topic/" + roomId,
-        Map.of(
-            "type", "players",
-            "players", room.players
-        )
-        );
-
-        // messagingTemplate.convertAndSend(
-        // "/topic/" + roomId,
-        // Map.of(
-        //     "type", "joined",
-        //     "yourId", newPlayer.id,
-        //     "username", username
-        // )
-        // );
-
-        // ✅ send personal ID ONLY to that user
-        messagingTemplate.convertAndSendToUser(
-            // newPlayer.id,
-            sessionId,
-            "/queue/me",
-            Map.of("yourId", newPlayer.id)
-        );
+    if (alreadyExists) {
+        System.out.println("⚠️ Duplicate join prevented for: " + username);
+        return;
     }
 
+    Player newPlayer = new Player(UUID.randomUUID().toString(), username);
+    newPlayer.sessionId = sessionId;
+    room.players.add(newPlayer);
+
+    // ✅ 1. send players list (unchanged)
+    messagingTemplate.convertAndSend(
+            "/topic/" + roomId,
+            Map.of(
+                    "type", "players",
+                    "players", room.players
+            )
+    );
+
+    // // ✅ 2. send ID THROUGH ROOM (THIS IS THE FIX)
+    // messagingTemplate.convertAndSend(
+    //         "/topic/" + roomId,
+    //         Map.of(
+    //                 "type", "joined",
+    //                 "playerId", newPlayer.id,
+    //                 "name", username
+    //         )
+    // );
+
+
+    messagingTemplate.convertAndSendToUser(
+        sessionId,
+        "/queue/me",
+        Map.of("yourId", newPlayer.id),
+        createHeaders(sessionId)  
+        );
+
+    if (room.gameStarted) {
+    messagingTemplate.convertAndSendToUser(
+        sessionId,
+        "/queue/game",
+        Map.of("type", "game-started"),
+        createHeaders(sessionId)
+    );
+    }
+
+    }
 
     @MessageMapping("/start-game")
     public void startGame(Map<String, String> payload) {
@@ -98,12 +159,6 @@ public class GameController {
 
     Room room = GameService.rooms.get(roomId);
     if (room == null) return;
-
-    // // 🔥 ADD THIS GUARD
-    // if (room.round > 0) {
-    //     System.out.println("⚠️ Game already started, ignoring");
-    //     return;
-    // }
 
     if (room.gameStarted) {
         System.out.println("⚠️ Game already started, ignoring");
@@ -144,18 +199,6 @@ public class GameController {
         
         System.out.println("START GAME TRIGGERED for room: " + roomId);
 
-        // messagingTemplate.convertAndSend("/topic/" + roomId, "start-game");
-
-        // ⏱ send question after 800ms
-        // new Thread(() -> {
-        // try {
-        //     Thread.sleep(4000);
-        // } catch (Exception e) {}
-
-        // System.out.println("🔥 MANUAL THREAD RUNNING");
-        // sendQuestions(roomId);
-        // }).start();
-
         scheduler.schedule(() -> {
 
         Room r = GameService.rooms.get(roomId);
@@ -167,13 +210,6 @@ public class GameController {
         sendQuestions(roomId);
         }, 4000);
 
-        // ⏱ auto end answers after 45s
-        // scheduler.schedule(() -> {
-        //     if (!room.answered) {
-        //         room.answered = true;
-        //         showAnswers(roomId);
-        //     }
-        // }, 45000);
         scheduler.schedule(() -> {
 
         if (room.roundStartTime != currentRoundTime) return;
@@ -195,50 +231,20 @@ public class GameController {
                     : room.question.getNormal();
 
             System.out.println("SENDING TO USER: " + p.sessionId + " TEXT: " + text);
-
-        //     messagingTemplate.convertAndSendToUser(
-        //     "/topic/" + roomId + "/player/" + p.id,
-        //     Map.of(
-        //         "text", text,
-        //         // "playerId", p.id,
-        //         "isImpostor", p.id.equals(room.impostor),
-        //         "round", room.round
-        //     )
-        // );
-
-        messagingTemplate.convertAndSendToUser(
-        p.sessionId,
-        "/queue/game",
-        Map.of(
-            "text", text,
-            "isImpostor", p.id.equals(room.impostor),
-            "round", room.round
-        ));
+            messagingTemplate.convertAndSendToUser(
+            p.sessionId,
+            "/queue/game",
+            Map.of(
+                "playerId", p.id,
+                "text", text,
+                "isImpostor", p.id.equals(room.impostor),
+                "round", room.round
+            ),
+            createHeaders(p.sessionId) 
+            );
         }
     }
 
-    // ANSWER
-    // @MessageMapping("/answer")
-    // public void answer(Map<String, String> payload) {
-    //     String roomId = payload.get("roomId");
-    //     String answer = payload.get("answer");
-    //     String playerId = payload.get("playerId");
-
-    //     Room room = GameService.rooms.get(roomId);
-    //     if (room == null) return;
-
-    //     // prevent duplicate answers
-    //     if (room.answers.containsKey(playerId)) {
-    //         return;
-    //     }
-
-    //     room.answers.put(playerId, answer);
-
-    //     if (room.answers.size() == room.players.size()) {
-    //         room.answered = true;
-    //         showAnswers(roomId);
-    //     }
-    // }
 
     @MessageMapping("/answer")
     public void answer(Map<String, String> payload) {
@@ -409,7 +415,7 @@ public class GameController {
         calculateVotes(roomId);
     }
     }, 20000);
-    
+
     }
 
     private void nextRound(String roomId) {
@@ -431,4 +437,15 @@ public class GameController {
     public void chat(Map<String, String> payload) {
         messagingTemplate.convertAndSend("/topic/" + payload.get("room"), payload.get("msg"));
     }
+
+    private Map<String, Object> createHeaders(String sessionId) {
+    SimpMessageHeaderAccessor headerAccessor =
+        SimpMessageHeaderAccessor.create(SimpMessageType.MESSAGE);
+
+    headerAccessor.setSessionId(sessionId);
+    headerAccessor.setLeaveMutable(true);
+
+    return headerAccessor.getMessageHeaders();
+    }
+
 }

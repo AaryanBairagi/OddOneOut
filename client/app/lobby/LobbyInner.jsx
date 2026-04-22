@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { connectSocket, subscribeRoom, sendMessage , subscribePrivateUser, subscribePrivate, subscribeMe } from "@/lib/socket"
+import { connectSocket, subscribeRoom, sendMessage, subscribePrivateUser } from "@/lib/socket"
+import { subscribeMe } from "@/lib/socket"
 
 export default function LobbyInner() {
 
@@ -15,61 +16,61 @@ export default function LobbyInner() {
 
   useEffect(() => {
 
-    if (!room || !name) return
+  if (!room || !name) return
 
-connectSocket(() => {
-  console.log("Lobby socket connected")
+  connectSocket(() => {
+    console.log("✅ CONNECTED")
 
-  subscribeMe((data) => {
+    // ✅ 1. SUBSCRIBE FIRST
+    subscribeMe((data) => {
+      let parsed
+      try { parsed = JSON.parse(data) } catch { parsed = data }
+
+      if (parsed?.yourId) {
+        console.log("✅ GOT ID:", parsed.yourId)
+        sessionStorage.setItem("playerId", parsed.yourId)
+      }
+    })
+
+   subscribePrivateUser((data) => {
   let parsed
   try { parsed = JSON.parse(data) } catch { parsed = data }
 
-  if (parsed?.yourId) {
-    console.log("✅ GOT ID:", parsed.yourId)
-    sessionStorage.setItem("playerId", parsed.yourId)
-  }
-})
-
-
-  subscribeRoom(room, (data) => {
-    let parsed
-    try { parsed = JSON.parse(data) } catch { parsed = data }
-
-    if (parsed?.type === "players") {
-      setPlayers(parsed.players)
-    }
-
-    const waitForIdAndNavigate = () => {
-    const id = sessionStorage.getItem("playerId")
-
-    if (id) {
-      console.log("✅ navigating with id:", id)
-      router.push(`/game?room=${room}&id=${id}`)
-    } else {
-      console.log("⏳ waiting for id...")
-      setTimeout(waitForIdAndNavigate, 100)
-    }
+  if (parsed?.playerId) {
+    console.log("✅ GOT ID IN GAME:", parsed.playerId)
+    sessionStorage.setItem("playerId", parsed.playerId)
   }
 
-    if (parsed === "start-game") {
-      console.log("🧠 START RECEIVED")
-      waitForIdAndNavigate();
-      // const id = sessionStorage.getItem("playerId")
-      // router.push(`/game?room=${room}&id=${id}`)
-    }
+  // setQuestion(parsed.text)
   })
 
+    subscribeRoom(room, (data) => {
+      let parsed
+      try { parsed = JSON.parse(data) } catch { parsed = data }
 
-  sendMessage("join-room", { roomId: room, username: name })
-})
+      if (parsed?.type === "players") {
+        setPlayers(parsed.players)
+      }
+
+      if (parsed === "start-game" || parsed?.type === "game-started") {
+        console.log("🧠 START RECEIVED")
+          // waitForIdAndNavigate()
+         router.push(`/game?room=${room}`) 
+      }
+    })
+
+
+    // ✅ 2. THEN JOIN (VERY IMPORTANT)
+    sendMessage("join-room", { roomId: room, username: name })
+  })
 
   }, [])
 
 
-function start() {
-  console.log("START BUTTON CLICKED")
-  sendMessage("start-game", { roomId: room })
-}
+  function start() {
+    console.log("START BUTTON CLICKED")
+    sendMessage("start-game", { roomId: room })
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-blue-900 flex items-center justify-center">
