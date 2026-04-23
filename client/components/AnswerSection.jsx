@@ -33,7 +33,12 @@ export default function AnswerSection({ onSubmit, hasAnswered }) {
       >
         {hasAnswered ? "Submitted" : "Submit"}
       </button>
-
+      {hasAnswered && (
+        <p className="text-green-400 text-center mt-2">
+          Answer submitted ✅
+        </p>
+        )}
+        
     </div>
   )
 }

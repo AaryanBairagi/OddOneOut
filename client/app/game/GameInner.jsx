@@ -32,6 +32,7 @@ const [subscribed, setSubscribed] = useState(false)
 const [voted, setVoted] = useState(false)
 const [selectedVote, setSelectedVote] = useState(null)
 const [messages, setMessages] = useState([])
+const [answered, setAnswered] = useState(false)
 
 useEffect(() => {
   connectSocket(() => {
@@ -109,6 +110,9 @@ function submitAnswer(ans) {
     answer: ans,
     playerId: myId
   })
+
+  setAnswered(true)  // 🔥 ADD THIS
+
 }
 
 function vote(id) {
@@ -274,19 +278,30 @@ return (
     </div>
 
     {/* 🔹 TIMER */}
-    <Timer Timer key={phase} seconds={45}  />
+    <Timer key={phase}   
+      seconds={
+        phase === "answer" ? 45 :
+        phase === "vote" ? 20 :
+        10
+      } 
+    />
 
     {/* 🔥 DYNAMIC PHASE */}
     {phase === "answer" && 
-      <AnswerSection
-      onSubmit={(ans) => {
-        submitAnswer(ans)
-      }}
-      hasAnswered={false}
-      />
+    <AnswerSection
+      onSubmit={(ans) => submitAnswer(ans)}
+      hasAnswered={answered}
+    />
     }
     {phase === "discussion" && <DiscussionSection messages={messages} />}
-    {phase === "vote" && <VotingSection />}
+    {phase === "vote" &&    
+    <VotingSection 
+      players={players} 
+      onVote={vote} 
+      voted={voted}
+      selectedVote={selectedVote}
+    />
+    }
 
   </div>
 </div>

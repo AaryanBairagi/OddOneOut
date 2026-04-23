@@ -22,6 +22,7 @@ export function connectSocket(onConnectCallback) {
   isConnecting = true
 
   const socket = new SockJS("http://localhost:8080/ws")
+  // const socket = new SockJS("https://oddoneout-backend.onrender.com/ws")
 
   stompClient = new Client({
     webSocketFactory: () => socket,
