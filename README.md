@@ -4,6 +4,20 @@ A real-time multiplayer web game inspired by social deduction mechanics (like *A
 
 ---
 
+## 🎓 Academic Context
+
+**Distributed Systems Mini Project (BE 2019 Pattern, SPPU 2026)**  
+
+This project was developed as part of the **Distributed Systems** course to demonstrate core concepts such as:
+
+- Real-time client-server communication using WebSockets  
+- Event-driven architecture  
+- State synchronization across multiple clients  
+- Handling concurrency in multiplayer environments  
+- Scalable message broadcasting and user-specific messaging  
+
+---
+
 ## 🚀 Live Demo
 
 * 🌐 Frontend (Vercel): https://oddoneout.vercel.app *(update if needed)*
