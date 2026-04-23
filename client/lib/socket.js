@@ -21,8 +21,8 @@ export function connectSocket(onConnectCallback) {
 
   isConnecting = true
 
-  const socket = new SockJS("http://localhost:8080/ws")
-  // const socket = new SockJS("https://oddoneout-backend.onrender.com/ws")
+  // const socket = new SockJS("http://localhost:8080/ws")
+  const socket = new SockJS("https://oddoneout-backend.onrender.com/ws")
 
   stompClient = new Client({
     webSocketFactory: () => socket,
@@ -45,38 +45,6 @@ export function connectSocket(onConnectCallback) {
   stompClient.activate()
 }
 
-// export function connectSocket(onConnectCallback) {
-//   if (stompClient && isConnected) {
-//     if (onConnectCallback) onConnectCallback();
-//     return;
-//   }
-
-//   const socket = new SockJS("http://localhost:8080/ws");
-
-//   stompClient = new Client({
-//     webSocketFactory: () => socket,
-//     reconnectDelay: 5000,
-
-//     onConnect: () => {
-//       console.log("Connected to Java WebSocket");
-//       isConnected = true;
-
-//       if (onConnectCallback) {
-//         onConnectCallback();
-//       }
-//     },
-
-//     onDisconnect: () => {
-//       isConnected = false;
-//     },
-
-//     onStompError: (frame) => {
-//       console.error("STOMP error", frame);
-//     }
-//   });
-
-//   stompClient.activate();
-// }
 
 export function subscribeRoom(roomId, callback) {
   if (!stompClient || !isConnected) {
