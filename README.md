@@ -1,4 +1,4 @@
-# 🎭 OddOneOut – Real-Time Multiplayer Party Game
+# 🎭 OddOneOut – Real-Time Multiplayer Game
 
 A real-time multiplayer web game inspired by social deduction mechanics (like *Among Us* / *Spyfall*), where players must identify the impostor through discussion and voting.
 
