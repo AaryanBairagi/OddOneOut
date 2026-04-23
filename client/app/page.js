@@ -79,7 +79,7 @@ export default function Home(){
 
           <button
             onClick={join}
-            className="w-full py-3 rounded-lg text-lg font-semibold bg-yellow-700 hover:bg-yellow-800  transition-colors duration-300 "
+            className="w-full py-3 rounded-lg text-lg font-semibold bg-yellow-600 hover:bg-yellow-700  transition-colors duration-300 "
           >
             Join Room
           </button>

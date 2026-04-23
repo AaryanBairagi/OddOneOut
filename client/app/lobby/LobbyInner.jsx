@@ -100,7 +100,7 @@ export default function LobbyInner() {
 
           <button
             onClick={start}
-            className="w-full py-3 rounded-lg font-semibold text-lg bg-yellow-700 hover:bg-yellow-800 text-white transition"
+            className="w-full py-3 rounded-lg font-semibold text-lg bg-yellow-600 hover:bg-yellow-700 text-white transition-colors duration-300"
           >
             Start Game
           </button>

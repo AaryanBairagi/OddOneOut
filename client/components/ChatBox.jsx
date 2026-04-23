@@ -18,7 +18,7 @@ export default function ChatBox({ answer, setAnswer, submit }) {
 
       <button
         onClick={submit}
-        className="py-3 rounded-xl bg-yellow-400 text-black font-semibold">
+        className="py-3 rounded-xl bg-yellow-600 hover:bg-yellow-700 transition-colors duration-300 text-white font-semibold">
         Submit
       </button>
 

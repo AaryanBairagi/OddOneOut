@@ -29,7 +29,7 @@ export default function PlayerCard({ player, onVote, hasVoted, disabled, selecte
 
       <div className="flex items-center gap-3">
 
-        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center font-bold">
+        <div className="w-10 h-10 rounded-full bg-gradient-to-r bg-blue-400 flex items-center justify-center font-bold">
           {player.name[0]}
         </div>
 
@@ -39,7 +39,7 @@ export default function PlayerCard({ player, onVote, hasVoted, disabled, selecte
 
       </div>
 
-      <span className="text-purple-400">
+      <span className="text-blue-400">
         {disabled 
           ? "You" 
           : selected 
